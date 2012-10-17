@@ -1,48 +1,32 @@
 <?php
-/***************************************************************
-*  Copyright notice
-*
-*  (c) 2008-2011 Dmitry Dulepov <dmitry@typo3.org>
-*  All rights reserved
-*
-*  This script is part of the TYPO3 project. The TYPO3 project is
-*  free software; you can redistribute it and/or modify
-*  it under the terms of the GNU General Public License as published by
-*  the Free Software Foundation; either version 2 of the License, or
-*  (at your option) any later version.
-*
-*  The GNU General Public License can be found at
-*  http://www.gnu.org/copyleft/gpl.html.
-*
-*  This script is distributed in the hope that it will be useful,
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*  GNU General Public License for more details.
-*
-*  This copyright notice MUST APPEAR in all copies of the script!
-***************************************************************/
-
-require_once(PATH_t3lib . 'class.t3lib_svbase.php');
-require_once(t3lib_extMgm::extPath('openid', 'sv1/class.tx_openid_store.php'));
-
 /**
  * Service "OpenID Authentication" for the "openid" extension.
  *
- * @author	Dmitry Dulepov <dmitry@typo3.org>
- * @package	TYPO3
- * @subpackage	tx_openid
+ * @author 	Dmitry Dulepov <dmitry@typo3.org>
+ * @package 	TYPO3
+ * @subpackage 	tx_openid
  */
 class tx_openid_sv1 extends t3lib_svbase {
-	/** Class name */
-	public $prefixId = 'tx_openid_sv1';		// Same as class name
 
-	/** Path to this script relative to the extension directory */
+	/**
+	 * Class name
+	 */
+	public $prefixId = 'tx_openid_sv1';
+
+	// Same as class name
+	/**
+	 * Path to this script relative to the extension directory
+	 */
 	public $scriptRelPath = 'sv1/class.tx_openid_sv1.php';
 
-	/** The extension key */
+	/**
+	 * The extension key
+	 */
 	public $extKey = 'openid';
 
-	/** Login data as passed to initAuth() */
+	/**
+	 * Login data as passed to initAuth()
+	 */
 	protected $loginData = array();
 
 	/**
@@ -60,21 +44,21 @@ class tx_openid_sv1 extends t3lib_svbase {
 	 * OpenID response object. It is initialized when OpenID provider returns
 	 * with success/failure response to us.
 	 *
-	 * @var	Auth_OpenID_ConsumerResponse
+	 * @var 	Auth_OpenID_ConsumerResponse
 	 */
 	protected $openIDResponse = NULL;
 
 	/**
 	 * A reference to the calling object
 	 *
-	 * @var	t3lib_userAuth
+	 * @var 	t3lib_userAuth
 	 */
 	protected $parentObject;
 
 	/**
 	 * If set to TRUE, than libraries are already included.
 	 */
-	protected static $openIDLibrariesIncluded = FALSE;
+	static protected $openIDLibrariesIncluded = FALSE;
 
 	/**
 	 * Contructs the OpenID authentication service.
@@ -95,7 +79,7 @@ class tx_openid_sv1 extends t3lib_svbase {
 	 * - GMP or BCMATH PHP extensions are installed and functional
 	 * - set_include_path() PHP function is available
 	 *
-	 * @return	boolean		TRUE if service is available
+	 * @return 	boolean		TRUE if service is available
 	 */
 	public function init() {
 		$available = FALSE;
@@ -111,28 +95,24 @@ class tx_openid_sv1 extends t3lib_svbase {
 			$available = FALSE;
 			$this->writeLog('set_include_path() PHP function is not available. OpenID authentication is disabled.');
 		}
-
 		return $available ? parent::init() : FALSE;
 	}
-
 
 	/**
 	 * Initializes authentication for this service.
 	 *
-	 * @param	string			$subType: Subtype for authentication (either "getUserFE" or "getUserBE")
-	 * @param	array			$loginData: Login data submitted by user and preprocessed by t3lib/class.t3lib_userauth.php
-	 * @param	array			$authenticationInformation: Additional TYPO3 information for authentication services (unused here)
-	 * @param	t3lib_userAuth	$parentObject: Calling object
-	 * @return	void
+	 * @param 	string			$subType: Subtype for authentication (either "getUserFE" or "getUserBE")
+	 * @param 	array			$loginData: Login data submitted by user and preprocessed by t3lib/class.t3lib_userauth.php
+	 * @param 	array			$authenticationInformation: Additional TYPO3 information for authentication services (unused here)
+	 * @param 	t3lib_userAuth	$parentObject: Calling object
+	 * @return 	void
 	 */
 	public function initAuth($subType, array $loginData, array $authenticationInformation, t3lib_userAuth &$parentObject) {
 		// Store login and authetication data
 		$this->loginData = $loginData;
 		$this->authenticationInformation = $authenticationInformation;
-
-			// Implement normalization according to OpenID 2.0 specification
+		// Implement normalization according to OpenID 2.0 specification
 		$this->openIDIdentifier = $this->normalizeOpenID($this->loginData['uname']);
-
 		// If we are here after authentication by the OpenID server, get its response.
 		if (t3lib_div::_GP('tx_openid_mode') == 'finish' && $this->openIDResponse == NULL) {
 			$this->includePHPOpenIDLibrary();
@@ -148,7 +128,7 @@ class tx_openid_sv1 extends t3lib_svbase {
 	 * function makes sure that user cannot be authenticated by any other service
 	 * if user tries to use OpenID to authenticate.
 	 *
-	 * @return	mixed		User record (content of fe_users/be_users as appropriate for the current mode)
+	 * @return 	mixed		User record (content of fe_users/be_users as appropriate for the current mode)
 	 */
 	public function getUser() {
 		$userRecord = NULL;
@@ -165,11 +145,9 @@ class tx_openid_sv1 extends t3lib_svbase {
 					if ($openIDIdentifier) {
 						$userRecord = $this->getUserRecord($openIDIdentifier);
 						if ($userRecord != NULL) {
-							$this->writeLog('User \'%s\' logged in with OpenID \'%s\'',
-								$userRecord[$this->parentObject->formfield_uname], $openIDIdentifier);
+							$this->writeLog('User \'%s\' logged in with OpenID \'%s\'', $userRecord[$this->parentObject->formfield_uname], $openIDIdentifier);
 						} else {
-							$this->writeLog('Failed to login user using OpenID \'%s\'',
-								$openIDIdentifier);
+							$this->writeLog('Failed to login user using OpenID \'%s\'', $openIDIdentifier);
 						}
 					}
 				}
@@ -191,13 +169,13 @@ class tx_openid_sv1 extends t3lib_svbase {
 	/**
 	 * Authenticates user using OpenID.
 	 *
-	 * @param	array		$userRecord	User record
-	 * @return	int		Code that shows if user is really authenticated.
-	 * @see	t3lib_userAuth::checkAuthentication()
+	 * @param 	array		$userRecord	User record
+	 * @return 	int		Code that shows if user is really authenticated.
+	 * @see 	t3lib_userAuth::checkAuthentication()
 	 */
 	public function authUser(array $userRecord) {
-		$result = 100;	// 100 means "we do not know, continue"
-
+		$result = 100;
+		// 100 means "we do not know, continue"
 		if ($userRecord['tx_openid_openid'] !== '') {
 			// Check if user is identified by the OpenID
 			if ($this->openIDResponse instanceof Auth_OpenID_ConsumerResponse) {
@@ -208,53 +186,40 @@ class tx_openid_sv1 extends t3lib_svbase {
 					// Success (code 200)
 					$result = 200;
 				} else {
-					$this->writeLog('OpenID authentication failed with code \'%s\'.',
-							$this->openIDResponse->status);
+					$this->writeLog('OpenID authentication failed with code \'%s\'.', $this->openIDResponse->status);
 				}
 			} else {
-					// We may need to send a request to the OpenID server.
-					// First, check if the supplied login name equals with the configured OpenID.
+				// We may need to send a request to the OpenID server.
+				// First, check if the supplied login name equals with the configured OpenID.
 				if ($this->openIDIdentifier == $userRecord['tx_openid_openid']) {
-						// Next, check if the user identifier looks like an OpenID identifier.
-						// Prevent PHP warning in case if identifiers is not an OpenID identifier
-						// (not an URL).
-						// TODO: Improve testing here. After normalization has been added, now all identifiers will succeed here...
+					// Next, check if the user identifier looks like an OpenID identifier.
+					// Prevent PHP warning in case if identifiers is not an OpenID identifier
+					// (not an URL).
+					// TODO: Improve testing here. After normalization has been added, now all identifiers will succeed here...
 					$urlParts = @parse_url($this->openIDIdentifier);
-					if (is_array($urlParts) && $urlParts['scheme'] != '' && $urlParts['host']) {
-
-							// Yes, this looks like a good OpenID. Ask OpenID server (should not return)
+					if ((is_array($urlParts) && $urlParts['scheme'] != '') && $urlParts['host']) {
+						// Yes, this looks like a good OpenID. Ask OpenID server (should not return)
 						$this->sendOpenIDRequest();
-
-						// If we are here, it means we have a valid OpenID but failed to
-						// contact the server. We stop authentication process.
-						// Alternatively it may mean that OpenID format is not correct.
-						// In both cases we return code 0 (complete failure)
 					}
 				}
 			}
 		}
-
 		return $result;
 	}
 
 	/**
 	 * Includes necessary files for the PHP OpenID library
 	 *
-	 * @return	void
+	 * @return 	void
 	 */
 	protected function includePHPOpenIDLibrary() {
 		if (!self::$openIDLibrariesIncluded) {
-
 			// Prevent further calls
 			self::$openIDLibrariesIncluded = TRUE;
-
 			// PHP OpenID libraries requires adjustments of path settings
 			$oldIncludePath = get_include_path();
 			$phpOpenIDLibPath = t3lib_extMgm::extPath('openid') . 'lib/php-openid';
-			@set_include_path($phpOpenIDLibPath . PATH_SEPARATOR .
-							$phpOpenIDLibPath . PATH_SEPARATOR . 'Auth' .
-							PATH_SEPARATOR . $oldIncludePath);
-
+			@set_include_path((((((($phpOpenIDLibPath . PATH_SEPARATOR) . $phpOpenIDLibPath) . PATH_SEPARATOR) . 'Auth') . PATH_SEPARATOR) . $oldIncludePath));
 			// Make sure that random generator is properly set up. Constant could be
 			// defined by the previous inclusion of the file
 			if (!defined('Auth_OpenID_RAND_SOURCE')) {
@@ -269,13 +234,10 @@ class tx_openid_sv1 extends t3lib_svbase {
 					}
 				}
 			}
-
 			// Include files
-			require_once($phpOpenIDLibPath . '/Auth/OpenID/Consumer.php');
-
+			require_once $phpOpenIDLibPath . '/Auth/OpenID/Consumer.php';
 			// Restore path
 			@set_include_path($oldIncludePath);
-
 			if (!is_array($_SESSION)) {
 				// Yadis requires session but session is not initialized when
 				// processing Backend authentication
@@ -288,24 +250,17 @@ class tx_openid_sv1 extends t3lib_svbase {
 	/**
 	 * Gets user record for the user with the OpenID provided by the user
 	 *
-	 * @param	string		$openIDIdentifier	OpenID identifier to search for
-	 * @return	array		Database fields from the table that corresponds to the current login mode (FE/BE)
+	 * @param 	string		$openIDIdentifier	OpenID identifier to search for
+	 * @return 	array		Database fields from the table that corresponds to the current login mode (FE/BE)
 	 */
 	protected function getUserRecord($openIDIdentifier) {
 		$record = NULL;
 		if ($openIDIdentifier) {
-				// $openIDIdentifier always as a trailing slash because it got normalized
-				// but tx_openid_openid possibly not so check for both alternatives in database
-			$record = $GLOBALS['TYPO3_DB']->exec_SELECTgetSingleRow('*',
-				$this->authenticationInformation['db_user']['table'],
-				'tx_openid_openid IN (' .
-					$GLOBALS['TYPO3_DB']->fullQuoteStr($openIDIdentifier, $this->authenticationInformation['db_user']['table']) .
-					',' . $GLOBALS['TYPO3_DB']->fullQuoteStr(rtrim($openIDIdentifier, '/'), $this->authenticationInformation['db_user']['table']) .
-					')' .
-					$this->authenticationInformation['db_user']['check_pid_clause'] .
-					$this->authenticationInformation['db_user']['enable_clause']);
+			// $openIDIdentifier always as a trailing slash because it got normalized
+			// but tx_openid_openid possibly not so check for both alternatives in database
+			$record = $GLOBALS['TYPO3_DB']->exec_SELECTgetSingleRow('*', $this->authenticationInformation['db_user']['table'], ((((('tx_openid_openid IN (' . $GLOBALS['TYPO3_DB']->fullQuoteStr($openIDIdentifier, $this->authenticationInformation['db_user']['table'])) . ',') . $GLOBALS['TYPO3_DB']->fullQuoteStr(rtrim($openIDIdentifier, '/'), $this->authenticationInformation['db_user']['table'])) . ')') . $this->authenticationInformation['db_user']['check_pid_clause']) . $this->authenticationInformation['db_user']['enable_clause']);
 			if ($record) {
-					// Make sure to work only with normalized OpenID during the whole process
+				// Make sure to work only with normalized OpenID during the whole process
 				$record['tx_openid_openid'] = $this->normalizeOpenID($record['tx_openid_openid']);
 			}
 		} else {
@@ -319,14 +274,14 @@ class tx_openid_sv1 extends t3lib_svbase {
 	/**
 	 * Creates OpenID Consumer object with a TYPO3-specific store. This function
 	 * is almost identical to the example from the PHP OpenID library.
+	 *
 	 * @todo use DB (or the caching framework) instead of the filesystem to store OpenID data
-	 * @return	Auth_OpenID_Consumer		Consumer instance
+	 * @return 	Auth_OpenID_Consumer		Consumer instance
 	 */
 	protected function getOpenIDConsumer() {
 		$openIDStore = t3lib_div::makeInstance('tx_openid_store');
 		/* @var $openIDStore tx_openid_store */
 		$openIDStore->cleanup();
-
 		return new Auth_OpenID_Consumer($openIDStore);
 	}
 
@@ -342,16 +297,13 @@ class tx_openid_sv1 extends t3lib_svbase {
 	 * This function does not return on success. If it returns, it means something
 	 * went totally wrong with OpenID.
 	 *
-	 * @return	void
+	 * @return 	void
 	 */
 	protected function sendOpenIDRequest() {
 		$this->includePHPOpenIDLibrary();
-
 		$openIDIdentifier = $this->openIDIdentifier;
-
 		// Initialize OpenID client system, get the consumer
 		$openIDConsumer = $this->getOpenIDConsumer();
-
 		// Begin the OpenID authentication process
 		$authenticationRequest = $openIDConsumer->begin($openIDIdentifier);
 		if (!$authenticationRequest) {
@@ -360,34 +312,27 @@ class tx_openid_sv1 extends t3lib_svbase {
 			$this->writeLog('Could not create authentication request for OpenID identifier \'%s\'', $openIDIdentifier);
 			return;
 		}
-
 		// Redirect the user to the OpenID server for authentication.
 		// Store the token for this authentication so we can verify the
 		// response.
-
 		// For OpenID version 1, we *should* send a redirect. For OpenID version 2,
 		// we should use a Javascript form to send a POST request to the server.
 		$returnURL = $this->getReturnURL();
 		$trustedRoot = t3lib_div::getIndpEnv('TYPO3_SITE_URL');
-
 		if ($authenticationRequest->shouldSendRedirect()) {
 			$redirectURL = $authenticationRequest->redirectURL($trustedRoot, $returnURL);
-
 			// If the redirect URL can't be built, return. We can only return.
 			if (Auth_OpenID::isFailure($redirectURL)) {
 				$this->writeLog('Authentication request could not create redirect URL for OpenID identifier \'%s\'', $openIDIdentifier);
 				return;
 			}
-
 			// Send redirect. We use 303 code because it allows to redirect POST
 			// requests without resending the form. This is exactly what we need here.
 			// See http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.3.4
 			@ob_end_clean();
 			t3lib_utility_Http::redirect($redirectURL, t3lib_utility_Http::HTTP_STATUS_303);
 		} else {
-			$formHtml = $authenticationRequest->htmlMarkup($trustedRoot,
-							$returnURL, FALSE, array('id' => 'openid_message'));
-
+			$formHtml = $authenticationRequest->htmlMarkup($trustedRoot, $returnURL, FALSE, array('id' => 'openid_message'));
 			// Display an error if the form markup couldn't be generated;
 			// otherwise, render the HTML.
 			if (Auth_OpenID::isFailure($formHtml)) {
@@ -400,7 +345,7 @@ class tx_openid_sv1 extends t3lib_svbase {
 			}
 		}
 		// If we reached this point, we must not return!
-		exit;
+		die;
 	}
 
 	/**
@@ -408,7 +353,7 @@ class tx_openid_sv1 extends t3lib_svbase {
 	 * the OpenID server, the user will be sent to this URL to complete
 	 * authentication process with the current site. We send it to our script.
 	 *
-	 * @return	string		Return URL
+	 * @return 	string		Return URL
 	 */
 	protected function getReturnURL() {
 		if ($this->authenticationInformation['loginType'] == 'FE') {
@@ -416,16 +361,14 @@ class tx_openid_sv1 extends t3lib_svbase {
 			// return to the calling page.
 			// Notice: 'pid' and 'logintype' parameter names cannot be changed!
 			// They are essential for FE user authentication.
-			$returnURL = 'index.php?eID=tx_openid&' .
-						'pid=' . $this->authenticationInformation['db_user']['checkPidList'] . '&' .
-						'logintype=login&';
+			$returnURL = ((('index.php?eID=tx_openid&' . 'pid=') . $this->authenticationInformation['db_user']['checkPidList']) . '&') . 'logintype=login&';
 		} else {
 			// In the Backend we will use dedicated script to create session.
 			// It is much easier for the Backend to manage users.
 			// Notice: 'login_status' parameter name cannot be changed!
 			// It is essential for BE user authentication.
 			$absoluteSiteURL = substr(t3lib_div::getIndpEnv('TYPO3_SITE_URL'), strlen(t3lib_div::getIndpEnv('TYPO3_REQUEST_HOST')));
-			$returnURL = $absoluteSiteURL . TYPO3_mainDir . 'sysext/' . $this->extKey . '/class.tx_openid_return.php?login_status=login&';
+			$returnURL = ((($absoluteSiteURL . TYPO3_mainDir) . 'sysext/') . $this->extKey) . '/class.tx_openid_return.php?login_status=login&';
 		}
 		if (t3lib_div::_GP('tx_openid_mode') == 'finish') {
 			$requestURL = t3lib_div::_GP('tx_openid_location');
@@ -434,10 +377,7 @@ class tx_openid_sv1 extends t3lib_svbase {
 			$requestURL = t3lib_div::getIndpEnv('TYPO3_REQUEST_URL');
 			$claimedIdentifier = $this->openIDIdentifier;
 		}
-		$returnURL .= 'tx_openid_location=' . rawurlencode($requestURL) . '&' .
-						'tx_openid_mode=finish&' .
-						'tx_openid_claimed=' . rawurlencode($claimedIdentifier) . '&' .
-						'tx_openid_signature=' . $this->getSignature($claimedIdentifier);
+		$returnURL .= ((((((('tx_openid_location=' . rawurlencode($requestURL)) . '&') . 'tx_openid_mode=finish&') . 'tx_openid_claimed=') . rawurlencode($claimedIdentifier)) . '&') . 'tx_openid_signature=') . $this->getSignature($claimedIdentifier);
 		return t3lib_div::locationHeaderUrl($returnURL);
 	}
 
@@ -464,35 +404,24 @@ class tx_openid_sv1 extends t3lib_svbase {
 	 * @return string Normalized OpenID identifier
 	 */
 	protected function normalizeOpenID($openIDIdentifier) {
-			// Strip everything with and behind the fragment delimiter character "#"
+		// Strip everything with and behind the fragment delimiter character "#"
 		if (strpos($openIDIdentifier, '#') !== FALSE) {
 			$openIDIdentifier = preg_replace('/#.*$/', '', $openIDIdentifier);
 		}
-
-			// A URI with a missing scheme is normalized to a http URI
+		// A URI with a missing scheme is normalized to a http URI
 		if (!preg_match('#^https?://#', $openIDIdentifier)) {
 			$escapedIdentifier = $GLOBALS['TYPO3_DB']->quoteStr($openIDIdentifier, $this->authenticationInformation['db_user']['table']);
-			$condition = 'tx_openid_openid IN (' .
-					'\'http://' . $escapedIdentifier . '\',' .
-					'\'http://' . $escapedIdentifier . '/\',' .
-					'\'https://' . $escapedIdentifier . '\',' .
-					'\'https://' . $escapedIdentifier . '/\'' .
-				')';
-
-			$row = $GLOBALS['TYPO3_DB']->exec_SELECTgetSingleRow('tx_openid_openid',
-				$this->authenticationInformation['db_user']['table'], $condition
-			);
+			$condition = (((((((((((('tx_openid_openid IN (' . '\'http://') . $escapedIdentifier) . '\',') . '\'http://') . $escapedIdentifier) . '/\',') . '\'https://') . $escapedIdentifier) . '\',') . '\'https://') . $escapedIdentifier) . '/\'') . ')';
+			$row = $GLOBALS['TYPO3_DB']->exec_SELECTgetSingleRow('tx_openid_openid', $this->authenticationInformation['db_user']['table'], $condition);
 			if (is_array($row)) {
 				$openIDIdentifier = $row['tx_openid_openid'];
 			}
 		}
-
-			// An empty path component is normalized to a slash
-			// (e.g. "http://domain.org" -> "http://domain.org/")
+		// An empty path component is normalized to a slash
+		// (e.g. "http://domain.org" -> "http://domain.org/")
 		if (preg_match('#^https?://[^/]+$#', $openIDIdentifier)) {
 			$openIDIdentifier .= '/';
 		}
-
 		return $openIDIdentifier;
 	}
 
@@ -504,8 +433,7 @@ class tx_openid_sv1 extends t3lib_svbase {
 	protected function getBackPath() {
 		$extPath = t3lib_extMgm::siteRelPath('openid');
 		$segmentCount = count(explode('/', $extPath));
-		$path = str_pad('', $segmentCount*3, '../') . TYPO3_mainDir;
-
+		$path = str_pad('', $segmentCount * 3, '../') . TYPO3_mainDir;
 		return $path;
 	}
 
@@ -543,22 +471,19 @@ class tx_openid_sv1 extends t3lib_svbase {
 	/**
 	 * Adjusts the OpenID identifier to to claimed OpenID, if the only difference
 	 * is in normalizing the URLs. Example:
-	 *	+ OpenID returned from provider: https://account.provider.net/
-	 *	+ OpenID used in TYPO3: https://account.provider.net (not normalized)
+	 * + OpenID returned from provider: https://account.provider.net/
+	 * + OpenID used in TYPO3: https://account.provider.net (not normalized)
 	 *
 	 * @param string $openIDIdentifier The OpenID returned by the OpenID provider
 	 * @return string Adjusted OpenID identifier
 	 */
 	protected function getAdjustedOpenIDIdentifier($openIDIdentifier) {
 		$result = '';
-
 		$claimedOpenIDIdentifier = $this->getSignedClaimedOpenIDIdentifier();
-		$pattern = '#^' . preg_quote($claimedOpenIDIdentifier, '#') . '/?$#';
-
+		$pattern = ('#^' . preg_quote($claimedOpenIDIdentifier, '#')) . '/?$#';
 		if (preg_match($pattern, $openIDIdentifier)) {
 			$result = $claimedOpenIDIdentifier;
 		}
-
 		return $result;
 	}
 
@@ -588,12 +513,12 @@ class tx_openid_sv1 extends t3lib_svbase {
 	 * This function accepts variable number of arguments and can format
 	 * parameters. The syntax is the same as for sprintf()
 	 *
-	 * @param	string		$message	Message to output
-	 * @return	void
-	 * @see	sprintf()
-	 * @see	t3lib::divLog()
-	 * @see	t3lib_div::sysLog()
-	 * @see	t3lib_timeTrack::setTSlogMessage()
+	 * @param 	string		$message	Message to output
+	 * @return 	void
+	 * @see 	sprintf()
+	 * @see 	t3lib::divLog()
+	 * @see 	t3lib_div::sysLog()
+	 * @see 	t3lib_timeTrack::setTSlogMessage()
 	 */
 	protected function writeLog($message) {
 		if (func_num_args() > 1) {
@@ -610,5 +535,7 @@ class tx_openid_sv1 extends t3lib_svbase {
 			t3lib_div::devLog($message, $this->extKey, t3lib_div::SYSLOG_SEVERITY_NOTICE);
 		}
 	}
+
 }
+
 ?>

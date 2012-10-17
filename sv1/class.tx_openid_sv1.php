@@ -21,33 +21,12 @@
  *
  *  This copyright notice MUST APPEAR in all copies of the script!
  ***************************************************************/
-/**
- * This class is the OpenID return script for the TYPO3 Frontend.
- *
- * @author 	Dmitry Dulepov <dmitry@typo3.org>
+require_once PATH_t3lib . 'class.t3lib_svbase.php';
+require_once t3lib_extMgm::extPath('openid', 'sv1/class.tx_openid_store.php');
+/*
+ * @deprecated since 6.0, the classname tx_openid_sv1 and this file is obsolete
+ * and will be removed by 7.0. The class was renamed and is now located at:
+ * typo3/sysext/openid/Classes/OpenidService.php
  */
-class tx_openid_eID {
-
-	/**
-	 * Processes eID request.
-	 *
-	 * @return 	void
-	 */
-	public function main() {
-		// Due to the nature of OpenID (redrections, etc) we need to force user
-		// session fetching if there is no session around. This ensures that
-		// our service is called even if there is no login data in the request.
-		// Inside the service we will process OpenID response and authenticate
-		// the user.
-		$GLOBALS['TYPO3_CONF_VARS']['SVCONF']['auth']['FE_fetchUserIfNoSession'] = TRUE;
-		// Initialize Frontend user
-		tslib_eidtools::connectDB();
-		tslib_eidtools::initFeUser();
-		// Redirect to the original location in any case (authenticated or not)
-		@ob_end_clean();
-		t3lib_utility_Http::redirect(t3lib_div::_GP('tx_openid_location'), t3lib_utility_Http::HTTP_STATUS_303);
-	}
-
-}
-
+require_once t3lib_extMgm::extPath('openid') . 'Classes/OpenidService.php';
 ?>
