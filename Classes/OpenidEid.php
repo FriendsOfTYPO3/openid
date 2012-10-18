@@ -1,4 +1,6 @@
 <?php
+namespace TYPO3\CMS\Openid;
+
 /***************************************************************
  *  Copyright notice
  *
@@ -26,7 +28,7 @@
  *
  * @author 	Dmitry Dulepov <dmitry@typo3.org>
  */
-class tx_openid_eID {
+class OpenidEid {
 
 	/**
 	 * Processes eID request.
@@ -41,13 +43,14 @@ class tx_openid_eID {
 		// the user.
 		$GLOBALS['TYPO3_CONF_VARS']['SVCONF']['auth']['FE_fetchUserIfNoSession'] = TRUE;
 		// Initialize Frontend user
-		tslib_eidtools::connectDB();
-		tslib_eidtools::initFeUser();
+		\TYPO3\CMS\Frontend\Utility\EidUtility::connectDB();
+		\TYPO3\CMS\Frontend\Utility\EidUtility::initFeUser();
 		// Redirect to the original location in any case (authenticated or not)
 		@ob_end_clean();
-		t3lib_utility_Http::redirect(t3lib_div::_GP('tx_openid_location'), t3lib_utility_Http::HTTP_STATUS_303);
+		\TYPO3\CMS\Core\Utility\HttpUtility::redirect(\TYPO3\CMS\Core\Utility\GeneralUtility::_GP('tx_openid_location'), \TYPO3\CMS\Core\Utility\HttpUtility::HTTP_STATUS_303);
 	}
 
 }
+
 
 ?>

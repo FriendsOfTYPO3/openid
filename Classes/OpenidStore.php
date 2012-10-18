@@ -1,4 +1,6 @@
 <?php
+namespace TYPO3\CMS\Openid;
+
 /**
  * This class is a TYPO3-specific OpenID store.
  *
@@ -6,7 +8,7 @@
  * @package TYPO3
  * @subpackage tx_openid
  */
-class tx_openid_store extends Auth_OpenID_OpenIDStore {
+class OpenidStore extends Auth_OpenID_OpenIDStore {
 
 	const ASSOCIATION_TABLE_NAME = 'tx_openid_assoc_store';
 	const ASSOCIATION_EXPIRATION_SAFETY_INTERVAL = 120;
@@ -151,7 +153,7 @@ class tx_openid_store extends Auth_OpenID_OpenIDStore {
 	 * @param Auth_OpenID_Association $association OpenID association
 	 * @return void
 	 */
-	protected function updateExistingAssociation($serverUrl, Auth_OpenID_Association $association) {
+	protected function updateExistingAssociation($serverUrl, \Auth_OpenID_Association $association) {
 		$where = sprintf('server_url=%s AND assoc_handle=%s AND expires>%d', $GLOBALS['TYPO3_DB']->fullQuoteStr($serverUrl, self::ASSOCIATION_TABLE_NAME), $GLOBALS['TYPO3_DB']->fullQuoteStr($association->handle, self::ASSOCIATION_TABLE_NAME), time());
 		$serializedAssociation = serialize($association);
 		$values = array(
@@ -198,5 +200,6 @@ class tx_openid_store extends Auth_OpenID_OpenIDStore {
 	}
 
 }
+
 
 ?>

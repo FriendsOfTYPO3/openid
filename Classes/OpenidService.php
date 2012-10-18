@@ -1,4 +1,6 @@
 <?php
+namespace TYPO3\CMS\Openid;
+
 /**
  * Service "OpenID Authentication" for the "openid" extension.
  *
@@ -6,7 +8,7 @@
  * @package 	TYPO3
  * @subpackage 	tx_openid
  */
-class tx_openid_sv1 extends t3lib_svbase {
+class OpenidService extends \TYPO3\CMS\Core\Service\AbstractService {
 
 	/**
 	 * Class name
@@ -107,14 +109,14 @@ class tx_openid_sv1 extends t3lib_svbase {
 	 * @param 	t3lib_userAuth	$parentObject: Calling object
 	 * @return 	void
 	 */
-	public function initAuth($subType, array $loginData, array $authenticationInformation, t3lib_userAuth &$parentObject) {
+	public function initAuth($subType, array $loginData, array $authenticationInformation, \TYPO3\CMS\Core\Authentication\AbstractUserAuthentication &$parentObject) {
 		// Store login and authetication data
 		$this->loginData = $loginData;
 		$this->authenticationInformation = $authenticationInformation;
 		// Implement normalization according to OpenID 2.0 specification
 		$this->openIDIdentifier = $this->normalizeOpenID($this->loginData['uname']);
 		// If we are here after authentication by the OpenID server, get its response.
-		if (t3lib_div::_GP('tx_openid_mode') == 'finish' && $this->openIDResponse == NULL) {
+		if (\TYPO3\CMS\Core\Utility\GeneralUtility::_GP('tx_openid_mode') == 'finish' && $this->openIDResponse == NULL) {
 			$this->includePHPOpenIDLibrary();
 			$openIDConsumer = $this->getOpenIDConsumer();
 			$this->openIDResponse = $openIDConsumer->complete($this->getReturnURL());
@@ -133,7 +135,7 @@ class tx_openid_sv1 extends t3lib_svbase {
 	public function getUser() {
 		$userRecord = NULL;
 		if ($this->loginData['status'] == 'login') {
-			if ($this->openIDResponse instanceof Auth_OpenID_ConsumerResponse) {
+			if ($this->openIDResponse instanceof \Auth_OpenID_ConsumerResponse) {
 				$GLOBALS['BACK_PATH'] = $this->getBackPath();
 				// We are running inside the OpenID return script
 				// Note: we cannot use $this->openIDResponse->getDisplayIdentifier()
@@ -178,7 +180,7 @@ class tx_openid_sv1 extends t3lib_svbase {
 		// 100 means "we do not know, continue"
 		if ($userRecord['tx_openid_openid'] !== '') {
 			// Check if user is identified by the OpenID
-			if ($this->openIDResponse instanceof Auth_OpenID_ConsumerResponse) {
+			if ($this->openIDResponse instanceof \Auth_OpenID_ConsumerResponse) {
 				// If we have a response, it means OpenID server tried to authenticate
 				// the user. Now we just look what is the status and provide
 				// corresponding response to the caller
@@ -218,7 +220,7 @@ class tx_openid_sv1 extends t3lib_svbase {
 			self::$openIDLibrariesIncluded = TRUE;
 			// PHP OpenID libraries requires adjustments of path settings
 			$oldIncludePath = get_include_path();
-			$phpOpenIDLibPath = t3lib_extMgm::extPath('openid') . 'lib/php-openid';
+			$phpOpenIDLibPath = \TYPO3\CMS\Core\Extension\ExtensionManager::extPath('openid') . 'lib/php-openid';
 			@set_include_path((((((($phpOpenIDLibPath . PATH_SEPARATOR) . $phpOpenIDLibPath) . PATH_SEPARATOR) . 'Auth') . PATH_SEPARATOR) . $oldIncludePath));
 			// Make sure that random generator is properly set up. Constant could be
 			// defined by the previous inclusion of the file
@@ -279,10 +281,10 @@ class tx_openid_sv1 extends t3lib_svbase {
 	 * @return 	Auth_OpenID_Consumer		Consumer instance
 	 */
 	protected function getOpenIDConsumer() {
-		$openIDStore = t3lib_div::makeInstance('tx_openid_store');
+		$openIDStore = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance('TYPO3\\CMS\\Openid\\OpenidStore');
 		/* @var $openIDStore tx_openid_store */
 		$openIDStore->cleanup();
-		return new Auth_OpenID_Consumer($openIDStore);
+		return new \Auth_OpenID_Consumer($openIDStore);
 	}
 
 	/**
@@ -318,11 +320,11 @@ class tx_openid_sv1 extends t3lib_svbase {
 		// For OpenID version 1, we *should* send a redirect. For OpenID version 2,
 		// we should use a Javascript form to send a POST request to the server.
 		$returnURL = $this->getReturnURL();
-		$trustedRoot = t3lib_div::getIndpEnv('TYPO3_SITE_URL');
+		$trustedRoot = \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL');
 		if ($authenticationRequest->shouldSendRedirect()) {
 			$redirectURL = $authenticationRequest->redirectURL($trustedRoot, $returnURL);
 			// If the redirect URL can't be built, return. We can only return.
-			if (Auth_OpenID::isFailure($redirectURL)) {
+			if (\Auth_OpenID::isFailure($redirectURL)) {
 				$this->writeLog('Authentication request could not create redirect URL for OpenID identifier \'%s\'', $openIDIdentifier);
 				return;
 			}
@@ -330,12 +332,12 @@ class tx_openid_sv1 extends t3lib_svbase {
 			// requests without resending the form. This is exactly what we need here.
 			// See http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.3.4
 			@ob_end_clean();
-			t3lib_utility_Http::redirect($redirectURL, t3lib_utility_Http::HTTP_STATUS_303);
+			\TYPO3\CMS\Core\Utility\HttpUtility::redirect($redirectURL, \TYPO3\CMS\Core\Utility\HttpUtility::HTTP_STATUS_303);
 		} else {
 			$formHtml = $authenticationRequest->htmlMarkup($trustedRoot, $returnURL, FALSE, array('id' => 'openid_message'));
 			// Display an error if the form markup couldn't be generated;
 			// otherwise, render the HTML.
-			if (Auth_OpenID::isFailure($formHtml)) {
+			if (\Auth_OpenID::isFailure($formHtml)) {
 				// Form markup cannot be generated
 				$this->writeLog('Could not create form markup for OpenID identifier \'%s\'', $openIDIdentifier);
 				return;
@@ -367,18 +369,18 @@ class tx_openid_sv1 extends t3lib_svbase {
 			// It is much easier for the Backend to manage users.
 			// Notice: 'login_status' parameter name cannot be changed!
 			// It is essential for BE user authentication.
-			$absoluteSiteURL = substr(t3lib_div::getIndpEnv('TYPO3_SITE_URL'), strlen(t3lib_div::getIndpEnv('TYPO3_REQUEST_HOST')));
+			$absoluteSiteURL = substr(\TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_SITE_URL'), strlen(\TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_REQUEST_HOST')));
 			$returnURL = ((($absoluteSiteURL . TYPO3_mainDir) . 'sysext/') . $this->extKey) . '/class.tx_openid_return.php?login_status=login&';
 		}
-		if (t3lib_div::_GP('tx_openid_mode') == 'finish') {
-			$requestURL = t3lib_div::_GP('tx_openid_location');
-			$claimedIdentifier = t3lib_div::_GP('tx_openid_claimed');
+		if (\TYPO3\CMS\Core\Utility\GeneralUtility::_GP('tx_openid_mode') == 'finish') {
+			$requestURL = \TYPO3\CMS\Core\Utility\GeneralUtility::_GP('tx_openid_location');
+			$claimedIdentifier = \TYPO3\CMS\Core\Utility\GeneralUtility::_GP('tx_openid_claimed');
 		} else {
-			$requestURL = t3lib_div::getIndpEnv('TYPO3_REQUEST_URL');
+			$requestURL = \TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_REQUEST_URL');
 			$claimedIdentifier = $this->openIDIdentifier;
 		}
 		$returnURL .= ((((((('tx_openid_location=' . rawurlencode($requestURL)) . '&') . 'tx_openid_mode=finish&') . 'tx_openid_claimed=') . rawurlencode($claimedIdentifier)) . '&') . 'tx_openid_signature=') . $this->getSignature($claimedIdentifier);
-		return t3lib_div::locationHeaderUrl($returnURL);
+		return \TYPO3\CMS\Core\Utility\GeneralUtility::locationHeaderUrl($returnURL);
 	}
 
 	/**
@@ -431,7 +433,7 @@ class tx_openid_sv1 extends t3lib_svbase {
 	 * @return string
 	 */
 	protected function getBackPath() {
-		$extPath = t3lib_extMgm::siteRelPath('openid');
+		$extPath = \TYPO3\CMS\Core\Extension\ExtensionManager::siteRelPath('openid');
 		$segmentCount = count(explode('/', $extPath));
 		$path = str_pad('', $segmentCount * 3, '../') . TYPO3_mainDir;
 		return $path;
@@ -460,9 +462,9 @@ class tx_openid_sv1 extends t3lib_svbase {
 	 * @return string The signed OpenID, if signature did not match this is empty
 	 */
 	protected function getSignedClaimedOpenIDIdentifier() {
-		$result = t3lib_div::_GP('tx_openid_claimed');
+		$result = \TYPO3\CMS\Core\Utility\GeneralUtility::_GP('tx_openid_claimed');
 		$signature = $this->getSignature($result);
-		if ($signature !== t3lib_div::_GP('tx_openid_signature')) {
+		if ($signature !== \TYPO3\CMS\Core\Utility\GeneralUtility::_GP('tx_openid_signature')) {
 			$result = '';
 		}
 		return $result;
@@ -495,9 +497,9 @@ class tx_openid_sv1 extends t3lib_svbase {
 	 * @return string
 	 */
 	protected function getSignedParameter($parameterName) {
-		$signedParametersList = t3lib_div::_GP('openid_signed');
-		if (t3lib_div::inList($signedParametersList, substr($parameterName, 7))) {
-			$result = t3lib_div::_GP($parameterName);
+		$signedParametersList = \TYPO3\CMS\Core\Utility\GeneralUtility::_GP('openid_signed');
+		if (\TYPO3\CMS\Core\Utility\GeneralUtility::inList($signedParametersList, substr($parameterName, 7))) {
+			$result = \TYPO3\CMS\Core\Utility\GeneralUtility::_GP($parameterName);
 		} else {
 			$result = '';
 		}
@@ -527,15 +529,16 @@ class tx_openid_sv1 extends t3lib_svbase {
 			$message = vsprintf($message, $params);
 		}
 		if (TYPO3_MODE == 'BE') {
-			t3lib_div::sysLog($message, $this->extKey, t3lib_div::SYSLOG_SEVERITY_NOTICE);
+			\TYPO3\CMS\Core\Utility\GeneralUtility::sysLog($message, $this->extKey, \TYPO3\CMS\Core\Utility\GeneralUtility::SYSLOG_SEVERITY_NOTICE);
 		} else {
 			$GLOBALS['TT']->setTSlogMessage($message);
 		}
 		if ($GLOBALS['TYPO3_CONF_VARS']['SYS']['enable_DLOG']) {
-			t3lib_div::devLog($message, $this->extKey, t3lib_div::SYSLOG_SEVERITY_NOTICE);
+			\TYPO3\CMS\Core\Utility\GeneralUtility::devLog($message, $this->extKey, \TYPO3\CMS\Core\Utility\GeneralUtility::SYSLOG_SEVERITY_NOTICE);
 		}
 	}
 
 }
+
 
 ?>

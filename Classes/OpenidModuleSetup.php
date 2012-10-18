@@ -1,4 +1,6 @@
 <?php
+namespace TYPO3\CMS\Openid;
+
 /***************************************************************
  *  Copyright notice
  *
@@ -26,7 +28,7 @@
  *
  * @author 	Steffen Gebert <steffen@steffen-gebert.de>
  */
-class tx_openid_mod_setup {
+class OpenidModuleSetup {
 
 	/**
 	 * Checks weather BE user has access to change its OpenID identifier
@@ -49,11 +51,12 @@ class tx_openid_mod_setup {
 	 * @param 	SC_mod_user_setup_index	$parent: The calling parent object
 	 * @return 	string					HTML input field to change the OpenId
 	 */
-	public function renderOpenID(array $parameters, SC_mod_user_setup_index $parent) {
+	public function renderOpenID(array $parameters, \TYPO3\CMS\Setup\Controller\SetupModuleController $parent) {
 		$openid = $GLOBALS['BE_USER']->user['tx_openid_openid'];
 		return (((('<input id="field_tx_openid_openid"' . $GLOBALS['TBE_TEMPLATE']->formWidth(20)) . ' type="text" name="data[be_users][tx_openid_openid]"') . ' value="') . htmlspecialchars($openid)) . '" />';
 	}
 
 }
+
 
 ?>
