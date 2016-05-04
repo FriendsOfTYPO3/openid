@@ -35,7 +35,7 @@ class OpenidEid
         // our service is called even if there is no login data in the request.
         // Inside the service we will process OpenID response and authenticate
         // the user.
-        $GLOBALS['TYPO3_CONF_VARS']['SVCONF']['auth']['FE_fetchUserIfNoSession'] = true;
+        $GLOBALS['TYPO3_CONF_VARS']['SVCONF']['auth']['setup']['FE_fetchUserIfNoSession'] = true;
         // Initialize Frontend user
         EidUtility::initFeUser();
         // Redirect to the original location in any case (authenticated or not)
