@@ -7,5 +7,5 @@ conf.py:
   copyright: 1997-2016
   project: OpenID authentication
   version: 7
-  release: 7.6.3
+  release: 7.6.4
 ...
