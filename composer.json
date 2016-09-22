@@ -1,7 +1,7 @@
 {
 	"name": "friendsoftypo3/openid",
 	"type": "typo3-cms-extension",
-	"keywords": "typo3,openid",
+	"keywords": ["typo3","openid"],
 	"description": "OpenID authentication for TYPO3 CMS",
 	"license": ["GPL-2.0+"],
 	"homepage": "https://github.com/FriendsOfTYPO3/openid",
