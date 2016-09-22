@@ -1,14 +1,26 @@
 {
 	"name": "friendsoftypo3/openid",
 	"type": "typo3-cms-extension",
-	"description": "TYPO3 Core",
-	"homepage": "https://typo3.org",
+	"keywords": "typo3,openid",
+	"description": "OpenID authentication for TYPO3 CMS",
 	"license": ["GPL-2.0+"],
-
+	"homepage": "https://github.com/FriendsOfTYPO3/openid",
+	"authors": [
+		{
+			"name": "Dmitry Dulepov",
+			"email": "dmitry@typo3.org",
+			"role": "Developer"
+		},
+		{
+			"name": "Markus Klein",
+			"email": "markus.klein@typo3.org",
+			"role": "Maintainer"
+		}
+	],
 	"require": {
-		"typo3/cms-core": "*",
-		"typo3/cms-sv": "*",
-		"typo3/cms-setup": "*"
+		"typo3/cms-core": "~7.6",
+		"typo3/cms-sv": "~7.6",
+		"typo3/cms-setup": "~7.6"
 	},
 	"replace": {
 		"openid": "self.version",

@@ -1,11 +1,9 @@
 <?php
 $EM_CONF[$_EXTKEY] = array(
     'title' => 'OpenID authentication',
-    'description' => 'Adds OpenID authentication to TYPO3',
+    'description' => 'OpenID authentication for TYPO3 CMS',
     'category' => 'services',
     'author' => 'Dmitry Dulepov',
-    'author_email' => 'dmitry@typo3.org',
-    'author_company' => 'TYPO3 core team',
     'state' => 'stable',
     'uploadfolder' => 0,
     'createDirs' => '',
