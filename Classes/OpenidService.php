@@ -112,6 +112,7 @@ class OpenidService extends AbstractService
      */
     public function init()
     {
+
         $available = false;
         if (extension_loaded('gmp')) {
             $available = is_callable('gmp_init');
@@ -161,18 +162,20 @@ class OpenidService extends AbstractService
     public function processLoginData(array &$loginData, $passwordTransmissionStrategy)
     {
         $isProcessed = false;
+
         // Pre-process the login only if no password has been submitted
         if (empty($loginData['uident_text'])) {
             try {
                 $openIdUrl = GeneralUtility::_POST('openid_url');
+                $this->includePHPOpenIDLibrary();
                 if (!empty($openIdUrl)) {
-                    $loginData['uident_openid'] = $this->normalizeOpenID($openIdUrl);
+                    $loginData['uident_openid'] = \Auth_OpenID::normalizeUrl($openIdUrl);
                     $isProcessed = true;
                 } elseif (!empty($loginData['uname'])) {
                     // It might be the case that during frontend login the OpenID URL is submitted in the username field
                     // Since we are a low priority service, and no password has been submitted it is OK to just assume
                     // we might have gotten an OpenID URL
-                    $loginData['uident_openid'] = $this->normalizeOpenID($loginData['uname']);
+                    $loginData['uident_openid'] = \Auth_OpenID::normalizeUrl($loginData['uname']);
                     $isProcessed = true;
                 }
             } catch (Exception $e) {
@@ -304,7 +307,8 @@ class OpenidService extends AbstractService
     {
         $record = null;
         try {
-            $openIDIdentifier = $this->normalizeOpenID($openIDIdentifier);
+            $this->includePHPOpenIDLibrary();
+            $openIDIdentifier = \Auth_OpenID::normalizeUrl($openIDIdentifier);
             // $openIDIdentifier always has a trailing slash
             // but tx_openid_openid field possibly not so check for both alternatives in database
             $record = $this->databaseConnection->exec_SELECTgetSingleRow(
@@ -319,7 +323,7 @@ class OpenidService extends AbstractService
             );
             if ($record) {
                 // Make sure to work only with normalized OpenID during the whole process
-                $record['tx_openid_openid'] = $this->normalizeOpenID($record['tx_openid_openid']);
+                $record['tx_openid_openid'] = \Auth_OpenID::normalizeUrl($record['tx_openid_openid']);
             }
         } catch (Exception $e) {
             // This should never happen and generally means hack attempt.
@@ -473,54 +477,6 @@ class OpenidService extends AbstractService
     protected function getSignature($parameter)
     {
         return GeneralUtility::hmac($parameter, $this->extKey);
-    }
-
-    /**
-     * Implement normalization according to OpenID 2.0 specification
-     * See http://openid.net/specs/openid-authentication-2_0.html#normalization
-     *
-     * @param string $openIDIdentifier OpenID identifier to normalize
-     * @return string Normalized OpenID identifier
-     * @throws Exception
-     */
-    protected function normalizeOpenID($openIDIdentifier)
-    {
-        if (empty($openIDIdentifier)) {
-            throw new Exception('Empty OpenID Identifier given.', 1381922460);
-        }
-        // Strip everything with and behind the fragment delimiter character "#"
-        if (strpos($openIDIdentifier, '#') !== false) {
-            $openIDIdentifier = preg_replace('/#.*$/', '', $openIDIdentifier);
-        }
-        // A URI with a missing scheme is normalized to a http URI
-        if (!preg_match('#^https?://#', $openIDIdentifier)) {
-            $escapedIdentifier = $this->databaseConnection->quoteStr($openIDIdentifier, $this->authenticationInformation['db_user']['table']);
-            $condition = 'tx_openid_openid IN ('
-                . '\'http://' . $escapedIdentifier . '\','
-                . '\'http://' . $escapedIdentifier . '/\','
-                . '\'https://' . $escapedIdentifier . '\','
-                . '\'https://' . $escapedIdentifier . '/\''
-                . ')';
-            $row = $this->databaseConnection->exec_SELECTgetSingleRow(
-                'tx_openid_openid',
-                $this->authenticationInformation['db_user']['table'],
-                $condition
-            );
-            if (is_array($row)) {
-                $openIDIdentifier = $row['tx_openid_openid'];
-            } else {
-                // This only happens when the OpenID provider will select the final OpenID identity
-                // In this case we require a valid URL as we cannot guess the scheme
-                // So we throw an Exception and do not start the OpenID handshake at all
-                throw new Exception('Trying to authenticate with OpenID but identifier is neither found in a user record nor it is a valid URL.', 1381922465);
-            }
-        }
-        // An empty path component is normalized to a slash
-        // (e.g. "http://domain.org" -> "http://domain.org/")
-        if (preg_match('#^https?://[^/]+$#', $openIDIdentifier)) {
-            $openIDIdentifier .= '/';
-        }
-        return $openIDIdentifier;
     }
 
     /**
