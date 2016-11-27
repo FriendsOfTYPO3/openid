@@ -18,7 +18,6 @@ use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
-use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Fluid\View\StandaloneView;
 use TYPO3\CMS\Lang\LanguageService;
@@ -95,7 +94,7 @@ class Wizard extends OpenidService
         if (GeneralUtility::_GP('tx_openid_mode') === 'finish' && $this->openIDResponse === null) {
             $this->includePHPOpenIDLibrary();
             $openIdConsumer = $this->getOpenIDConsumer();
-            $this->openIDResponse = $openIdConsumer->complete($this->getReturnUrl());
+            $this->openIDResponse = $openIdConsumer->complete($this->getReturnUrl(''));
             $this->handleResponse();
         } elseif (GeneralUtility::_POST('openid_url') != '') {
             $openIDIdentifier = GeneralUtility::_POST('openid_url');
@@ -121,9 +120,10 @@ class Wizard extends OpenidService
     /**
      * Return URL that shall be called by the OpenID server
      *
+     * @param string $claimedIdentifier The OpenID identifier for discovery and auth request
      * @return string Full URL with protocol and hostname
      */
-    protected function getReturnUrl()
+    protected function getReturnUrl($claimedIdentifier)
     {
         $parameters = [
             'tx_openid_mode' => 'finish',
@@ -198,20 +198,13 @@ class Wizard extends OpenidService
         // use FLUID standalone view for wizard content
         $view = GeneralUtility::makeInstance(StandaloneView::class);
         $view->getRequest()->setControllerExtensionName('openid');
-        $view->setTemplatePathAndFilename(
-            ExtensionManagementUtility::extPath('openid') .
-            'Resources/Private/Templates/Wizard/Content.html'
-        );
+        $view->setTemplateRootPaths(['EXT:openid/Resources/Private/Templates/']);
+        $view->setTemplate('Wizard/Content.html');
 
         /** @var $flashMessageService FlashMessageService */
         $flashMessageService = GeneralUtility::makeInstance(FlashMessageService::class);
-        $defaultFlashMessageQueue = $flashMessageService->getMessageQueueByIdentifier();
 
-        $messages = array();
-        foreach ($defaultFlashMessageQueue->getAllMessagesAndFlush() as $message) {
-            $messages[] = $message->render();
-        }
-        $view->assign('messages', $messages);
+        $view->assign('messages', $flashMessageService->getMessageQueueByIdentifier()->getAllMessagesAndFlush());
         $view->assign('formAction', BackendUtility::getModuleUrl('wizard_openid', [], false, true));
         $view->assign('claimedId', $this->claimedId);
         $view->assign('parentFormItemName', $this->parentFormItemName);

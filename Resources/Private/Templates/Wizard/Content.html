@@ -1,3 +1,4 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
 <f:be.container pageTitle="{f:translate(key:'html.title')}"
 	includeCssFiles="{
 		0:'{f:uri.resource(extensionName:\'openid\', path:\'Css/Wizard.css\')}'
@@ -7,9 +8,22 @@
 
 	<p><f:translate key="html.description" /></p>
 
-	<f:if condition="{messages->f:count()} > 0">
+	<f:if condition="{messages}">
 		<f:for each="{messages}" as="message">
-			<f:format.raw>{message}</f:format.raw>
+			<div class="alert {message.class}">
+				<div class="media">
+					<div class="media-left">
+						<span class="fa-stack fa-lg">
+							<i class="fa fa-circle fa-stack-2x"></i>
+							<i class="fa fa-{message.iconName} fa-stack-1x"></i>
+						</span>
+					</div>
+					<div class="media-body">
+						<f:if condition="{message.title}"><h4 class="alert-title">{message.title}</h4></f:if>
+						<div class="alert-message">{message.message}</div>
+					</div>
+				</div>
+			</div>
 		</f:for>
 	</f:if>
 	<f:if condition="{claimedId}">
@@ -50,3 +64,4 @@
 		</div>
 	</f:if>
 </f:be.container>
+</html>
