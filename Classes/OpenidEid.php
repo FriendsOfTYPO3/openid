@@ -14,8 +14,9 @@ namespace FoT3\Openid;
  * The TYPO3 project - inspiring people to share!
  */
 
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Core\Utility\HttpUtility;
 use TYPO3\CMS\Frontend\Utility\EidUtility;
 
 /**
@@ -24,13 +25,15 @@ use TYPO3\CMS\Frontend\Utility\EidUtility;
 class OpenidEid
 {
     /**
-     * Processes eID request.
+     * Process request
      *
-     * @return void
+     * @param ServerRequestInterface $request
+     * @param ResponseInterface $response
+     * @return null|ResponseInterface
      */
-    public function main()
+    public function processRequest(ServerRequestInterface $request, ResponseInterface $response)
     {
-        // Due to the nature of OpenID (redrections, etc) we need to force user
+        // Due to the nature of OpenID (redirections, etc) we need to force user
         // session fetching if there is no session around. This ensures that
         // our service is called even if there is no login data in the request.
         // Inside the service we will process OpenID response and authenticate
@@ -41,10 +44,14 @@ class OpenidEid
         // Redirect to the original location in any case (authenticated or not)
         @ob_end_clean();
 
-        $location = GeneralUtility::_GP('tx_openid_location');
-        $signature = GeneralUtility::hmac($location, 'openid');
-        if ($signature === GeneralUtility::_GP('tx_openid_location_signature')) {
-            HttpUtility::redirect($location, HttpUtility::HTTP_STATUS_303);
+        $post = $request->getParsedBody();
+        $get = $request->getQueryParams();
+        $location = isset($post['tx_openid_location']) ? $post['tx_openid_location'] : $get['tx_openid_location'];
+        $signature = isset($post['tx_openid_location_signature']) ? $post['tx_openid_location_signature'] : $get['tx_openid_location_signature'];
+        if (GeneralUtility::hmac($location, 'openid') === $signature) {
+            $response = $response->withHeader('Location', GeneralUtility::locationHeaderUrl($location))->withStatus(303);
         }
+
+        return $response;
     }
 }

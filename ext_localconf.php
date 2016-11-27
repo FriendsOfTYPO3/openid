@@ -40,7 +40,7 @@ defined('TYPO3_MODE') || die();
 );
 
 // Register eID script that performs final FE user authentication. It will be called by the OpenID provider
-$GLOBALS['TYPO3_CONF_VARS']['FE']['eID_include']['tx_openid'] = 'EXT:openid/class.tx_openid_eid.php';
+$GLOBALS['TYPO3_CONF_VARS']['FE']['eID_include']['tx_openid'] = \FoT3\Openid\OpenidEid::class . '::processRequest';
 $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['setup']['accessLevelCheck'][\FoT3\Openid\OpenidModuleSetup::class] = '';
 
 // Use popup window to refresh login instead of the AJAX relogin:
