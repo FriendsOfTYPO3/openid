@@ -13,6 +13,7 @@ namespace FoT3\Openid;
  *
  * The TYPO3 project - inspiring people to share!
  */
+
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
@@ -58,32 +59,9 @@ class Wizard extends OpenidService
      */
     public function mainAction(ServerRequestInterface $request, ResponseInterface $response)
     {
-        $this->processWizard();
-        $content = $this->renderContent();
-
-        $response->getBody()->write($content);
-        return $response;
-    }
-
-    /**
-     * Run the wizard and output HTML.
-     *
-     * @return void
-     * @deprecated since TYPO3 CMS 7, will be removed in TYPO3 CMS 8, use mainAction() instead
-     */
-    public function main()
-    {
-        GeneralUtility::logDeprecatedFunction();
-        $this->processWizard();
-        $this->renderHtml();
-    }
-
-    /**
-     * Run the wizard
-     */
-    protected function processWizard()
-    {
-        $p = GeneralUtility::_GP('P');
+        $post = $request->getParsedBody();
+        $get = $request->getQueryParams();
+        $p = $get['P'];
         if (isset($p['itemName'])) {
             $this->parentFormItemName = $p['itemName'];
         }
@@ -91,30 +69,31 @@ class Wizard extends OpenidService
             $this->parentFormFieldChangeFunc = $p['fieldChangeFunc']['TBE_EDITOR_fieldChanged'];
         }
 
-        if (GeneralUtility::_GP('tx_openid_mode') === 'finish' && $this->openIDResponse === null) {
+        if ($get['tx_openid_mode'] === 'finish' && $this->openIDResponse === null) {
             $this->includePHPOpenIDLibrary();
             $openIdConsumer = $this->getOpenIDConsumer();
             $this->openIDResponse = $openIdConsumer->complete($this->getReturnUrl(''));
             $this->handleResponse();
-        } elseif (GeneralUtility::_POST('openid_url') != '') {
-            $openIDIdentifier = GeneralUtility::_POST('openid_url');
+        } elseif ($post['openid_url'] !== '') {
+            $openIDIdentifier = $post['openid_url'];
             $this->sendOpenIDRequest($openIDIdentifier);
 
             // When sendOpenIDRequest() returns, there was an error
-            $flashMessageService = GeneralUtility::makeInstance(
-                FlashMessageService::class
-            );
+            $flashMessageService = GeneralUtility::makeInstance(FlashMessageService::class);
             $flashMessage = GeneralUtility::makeInstance(
                 FlashMessage::class,
                 sprintf(
-                        $this->getLanguageService()->sL('LLL:EXT:openid/Resources/Private/Language/locallang.xlf:error.setup'),
-                        htmlspecialchars($openIDIdentifier)
+                    $this->getLanguageService()->sL('LLL:EXT:openid/Resources/Private/Language/locallang.xlf:error.setup'),
+                    htmlspecialchars($openIDIdentifier)
                 ),
                 $this->getLanguageService()->sL('LLL:EXT:openid/Resources/Private/Language/locallang.xlf:title.error'),
                 FlashMessage::ERROR
             );
             $flashMessageService->getMessageQueueByIdentifier()->enqueue($flashMessage);
         }
+
+        $response->getBody()->write($this->renderContent());
+        return $response;
     }
 
     /**
@@ -130,7 +109,7 @@ class Wizard extends OpenidService
             'P[itemName]' => $this->parentFormItemName,
             'P[fieldChangeFunc][TBE_EDITOR_fieldChanged]' => $this->parentFormFieldChangeFunc
         ];
-        return BackendUtility::getModuleUrl('wizard_openid', $parameters, false, true);
+        return BackendUtility::getModuleUrl('wizard_openid', $parameters);
     }
 
     /**
@@ -205,7 +184,7 @@ class Wizard extends OpenidService
         $flashMessageService = GeneralUtility::makeInstance(FlashMessageService::class);
 
         $view->assign('messages', $flashMessageService->getMessageQueueByIdentifier()->getAllMessagesAndFlush());
-        $view->assign('formAction', BackendUtility::getModuleUrl('wizard_openid', [], false, true));
+        $view->assign('formAction', BackendUtility::getModuleUrl('wizard_openid'));
         $view->assign('claimedId', $this->claimedId);
         $view->assign('parentFormItemName', $this->parentFormItemName);
         $view->assign('parentFormItemNameNoHr', strtr($this->parentFormItemName, array('_hr' => '')));
@@ -216,19 +195,6 @@ class Wizard extends OpenidService
         }
 
         return $view->render();
-    }
-
-    /**
-     * Render HTML and output it
-     *
-     * @return void
-     * @deprecated since TYPO3 CMS 7, will be removed in TYPO3 CMS 8, use mainAction() instead
-     */
-    protected function renderHtml()
-    {
-        GeneralUtility::logDeprecatedFunction();
-        header('HTTP/1.0 200 OK');
-        echo $this->renderContent();
     }
 
     /**

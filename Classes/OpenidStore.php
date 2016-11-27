@@ -14,8 +14,8 @@ namespace FoT3\Openid;
  * The TYPO3 project - inspiring people to share!
  */
 
-
-use TYPO3\CMS\Core\Database\DatabaseConnection;
+use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 require_once \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::extPath('openid') . 'lib/php-openid/Auth/OpenID/Interface.php';
 
@@ -32,19 +32,6 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
     const NONCE_STORAGE_TIME = 864000;
 
     /**
-     * @var DatabaseConnection
-     */
-    protected $databaseConnection;
-
-    /**
-     * @param null|DatabaseConnection $databaseConnection
-     */
-    public function __construct(DatabaseConnection $databaseConnection = null)
-    {
-        $this->databaseConnection = $databaseConnection ?: $GLOBALS['TYPO3_DB'];
-    }
-
-    /**
      * Sores the association for future use
      *
      * @param string $serverUrl Server URL
@@ -53,14 +40,51 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
      */
     public function storeAssociation($serverUrl, $association)
     {
-        /* @var $association \Auth_OpenID_Association */
-        $this->databaseConnection->sql_query('START TRANSACTION');
-        if ($this->doesAssociationExist($serverUrl, $association)) {
-            $this->updateExistingAssociation($serverUrl, $association);
+        $builder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(self::ASSOCIATION_TABLE_NAME);
+        $builder->getRestrictions()->removeAll();
+
+        $builder->getConnection()->beginTransaction();
+
+        $existingAssociations = $builder
+            ->count('*')
+            ->from(self::ASSOCIATION_TABLE_NAME)
+            ->where(
+                $builder->expr()->eq('server_url', $builder->createNamedParameter($serverUrl)),
+                $builder->expr()->eq('assoc_handle', $builder->createNamedParameter($association->handle)),
+                $builder->expr()->eq('expires', $builder->createNamedParameter(time(), \PDO::PARAM_INT))
+            )
+            ->execute()
+            ->fetchColumn();
+
+        if ($existingAssociations) {
+            $builder
+                ->update(self::ASSOCIATION_TABLE_NAME)
+                ->values([
+                    'content' => base64_encode(serialize($association)),
+                    'tstamp' => time()
+                ])
+                ->where(
+                    $builder->expr()->eq('server_url', $builder->createNamedParameter($serverUrl)),
+                    $builder->expr()->eq('assoc_handle', $builder->createNamedParameter($association->handle)),
+                    $builder->expr()->eq('expires', $builder->createNamedParameter(time(), \PDO::PARAM_INT))
+                )
+                ->execute();
         } else {
-            $this->storeNewAssociation($serverUrl, $association);
+            // In the next query we can get race conditions. sha1_hash prevents many associations from being stored for one server
+            $builder
+                ->insert(self::ASSOCIATION_TABLE_NAME)
+                ->values([
+                    'assoc_handle' => $association->handle,
+                    'content' => base64_encode(serialize($association)),
+                    'crdate' => $association->issued,
+                    'tstamp' => time(),
+                    'expires' => $association->issued + $association->lifetime - self::ASSOCIATION_EXPIRATION_SAFETY_INTERVAL,
+                    'server_url' => $serverUrl
+                ])
+                ->execute();
         }
-        $this->databaseConnection->sql_query('COMMIT');
+
+        $builder->getConnection()->commit();
     }
 
     /**
@@ -70,9 +94,9 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
      */
     public function cleanupAssociations()
     {
-        $where = sprintf('expires<=%d', time());
-        $this->databaseConnection->exec_DELETEquery(self::ASSOCIATION_TABLE_NAME, $where);
-        return $this->databaseConnection->sql_affected_rows();
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(self::ASSOCIATION_TABLE_NAME);
+        $queryBuilder->getRestrictions()->removeAll();
+        return $queryBuilder->delete(self::ASSOCIATION_TABLE_NAME)->where('expires <= ' . time())->execute()->rowCount();
     }
 
     /**
@@ -85,21 +109,29 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
     public function getAssociation($serverUrl, $handle = null)
     {
         $this->cleanupAssociations();
-        $where = sprintf('server_url=%s AND expires>%d', $this->databaseConnection->fullQuoteStr($serverUrl, self::ASSOCIATION_TABLE_NAME), time());
-        if ($handle != null) {
-            $where .= sprintf(' AND assoc_handle=%s', $this->databaseConnection->fullQuoteStr($handle, self::ASSOCIATION_TABLE_NAME));
-            $sort = '';
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(self::ASSOCIATION_TABLE_NAME);
+        $queryBuilder->getRestrictions()->removeAll();
+        $queryBuilder->select('uid', 'content')->from(self::ASSOCIATION_TABLE_NAME)->where(
+            $queryBuilder->expr()->eq('server_url', $queryBuilder->createNamedParameter($serverUrl)),
+            $queryBuilder->expr()->eq('expires', $queryBuilder->createNamedParameter(time(), \PDO::PARAM_INT))
+        );
+        if ($handle !== null) {
+            $queryBuilder->andWhere($queryBuilder->expr()->eq('assoc_handle', $queryBuilder->createNamedParameter($handle)));
         } else {
-            $sort = 'tstamp DESC';
+            $queryBuilder->orderBy('tstamp', 'DESC');
         }
-        $row = $this->databaseConnection->exec_SELECTgetSingleRow('uid, content', self::ASSOCIATION_TABLE_NAME, $where, '', $sort);
+        $row = $queryBuilder->execute()->fetch();
         $result = null;
         if (is_array($row)) {
             $result = @unserialize(base64_decode($row['content']));
             if ($result === false) {
                 $result = null;
             } else {
-                $this->updateAssociationTimeStamp($row['tstamp']);
+                $queryBuilder
+                    ->update(self::ASSOCIATION_TABLE_NAME)
+                    ->values(['tstamp' => time()])
+                    ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($row['uid'], \PDO::PARAM_INT)))
+                    ->execute();
             }
         }
         return $result;
@@ -114,9 +146,14 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
      */
     public function removeAssociation($serverUrl, $handle)
     {
-        $where = sprintf('server_url=%s AND assoc_handle=%s', $this->databaseConnection->fullQuoteStr($serverUrl, self::ASSOCIATION_TABLE_NAME), $this->databaseConnection->fullQuoteStr($handle, self::ASSOCIATION_TABLE_NAME));
-        $this->databaseConnection->exec_DELETEquery(self::ASSOCIATION_TABLE_NAME, $where);
-        $deletedCount = $this->databaseConnection->sql_affected_rows();
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(self::ASSOCIATION_TABLE_NAME);
+        $queryBuilder->getRestrictions()->removeAll();
+        $deletedCount = $queryBuilder
+            ->delete(self::ASSOCIATION_TABLE_NAME)->where(
+                $queryBuilder->expr()->eq('server_url', $queryBuilder->createNamedParameter($serverUrl)),
+                $queryBuilder->expr()->eq('assoc_handle', $queryBuilder->createNamedParameter($handle))
+            )->execute()->rowCount();
+
         return $deletedCount > 0;
     }
 
@@ -127,8 +164,10 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
      */
     public function cleanupNonces()
     {
-        $where = sprintf('crdate<%d', time() - self::NONCE_STORAGE_TIME);
-        $this->databaseConnection->exec_DELETEquery(self::NONCE_TABLE_NAME, $where);
+        $where = 'crdate < ' . (time() - self::NONCE_STORAGE_TIME);
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(self::NONCE_TABLE_NAME);
+        $queryBuilder->getRestrictions()->removeAll();
+        $queryBuilder->delete(self::NONCE_TABLE_NAME)->where($where)->execute();
     }
 
     /**
@@ -149,8 +188,8 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
                 'server_url' => $serverUrl,
                 'tstamp' => $timestamp
             );
-            $this->databaseConnection->exec_INSERTquery(self::NONCE_TABLE_NAME, $values);
-            $affectedRows = $this->databaseConnection->sql_affected_rows();
+            $connection = GeneralUtility::makeInstance(ConnectionPool::class)->getConnectionForTable(self::NONCE_TABLE_NAME);
+            $affectedRows = $connection->createQueryBuilder()->insert(self::NONCE_TABLE_NAME)->values($values)->execute()->rowCount();
             $result = $affectedRows > 0;
         }
         return $result;
@@ -163,87 +202,8 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
      */
     public function reset()
     {
-        $this->databaseConnection->exec_TRUNCATEquery(self::ASSOCIATION_TABLE_NAME);
-        $this->databaseConnection->exec_TRUNCATEquery(self::NONCE_TABLE_NAME);
-    }
-
-    /**
-     * Checks if such association exists.
-     *
-     * @param string $serverUrl Server URL
-     * @param \Auth_OpenID_Association $association OpenID association
-     * @return bool
-     */
-    protected function doesAssociationExist($serverUrl, $association)
-    {
-        $where = sprintf(
-            'server_url=%s AND assoc_handle=%s AND expires>%d',
-            $this->databaseConnection->fullQuoteStr($serverUrl, self::ASSOCIATION_TABLE_NAME),
-            $this->databaseConnection->fullQuoteStr($association->handle, self::ASSOCIATION_TABLE_NAME),
-            time()
-        );
-        $row = $this->databaseConnection->exec_SELECTgetSingleRow('COUNT(*) as assocCount', self::ASSOCIATION_TABLE_NAME, $where);
-        return $row['assocCount'] > 0;
-    }
-
-    /**
-     * Updates existing association.
-     *
-     * @param string $serverUrl Server URL
-     * @param \Auth_OpenID_Association $association OpenID association
-     * @return void
-     */
-    protected function updateExistingAssociation($serverUrl, \Auth_OpenID_Association $association)
-    {
-        $where = sprintf(
-            'server_url=%s AND assoc_handle=%s AND expires>%d',
-            $this->databaseConnection->fullQuoteStr($serverUrl, self::ASSOCIATION_TABLE_NAME),
-            $this->databaseConnection->fullQuoteStr($association->handle, self::ASSOCIATION_TABLE_NAME),
-            time()
-        );
-        $serializedAssociation = serialize($association);
-        $values = array(
-            'content' => base64_encode($serializedAssociation),
-            'tstamp' => time()
-        );
-        $this->databaseConnection->exec_UPDATEquery(self::ASSOCIATION_TABLE_NAME, $where, $values);
-    }
-
-    /**
-     * Stores new association to the database.
-     *
-     * @param string $serverUrl Server URL
-     * @param \Auth_OpenID_Association $association OpenID association
-     * @return void
-     */
-    protected function storeNewAssociation($serverUrl, $association)
-    {
-        $serializedAssociation = serialize($association);
-        $values = array(
-            'assoc_handle' => $association->handle,
-            'content' => base64_encode($serializedAssociation),
-            'crdate' => $association->issued,
-            'tstamp' => time(),
-            'expires' => $association->issued + $association->lifetime - self::ASSOCIATION_EXPIRATION_SAFETY_INTERVAL,
-            'server_url' => $serverUrl
-        );
-        // In the next query we can get race conditions. sha1_hash prevents many
-        // asociations from being stored for one server
-        $this->databaseConnection->exec_INSERTquery(self::ASSOCIATION_TABLE_NAME, $values);
-    }
-
-    /**
-     * Updates association time stamp.
-     *
-     * @param int $recordId Association record id in the database
-     * @return void
-     */
-    protected function updateAssociationTimeStamp($recordId)
-    {
-        $where = sprintf('uid=%d', $recordId);
-        $values = array(
-            'tstamp' => time()
-        );
-        $this->databaseConnection->exec_UPDATEquery(self::ASSOCIATION_TABLE_NAME, $where, $values);
+        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+        $connectionPool->getConnectionForTable(self::ASSOCIATION_TABLE_NAME)->truncate(self::ASSOCIATION_TABLE_NAME);
+        $connectionPool->getConnectionForTable(self::NONCE_TABLE_NAME)->truncate(self::NONCE_TABLE_NAME);
     }
 }

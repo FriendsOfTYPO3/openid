@@ -14,7 +14,10 @@ namespace FoT3\Openid;
  * The TYPO3 project - inspiring people to share!
  */
 
-use TYPO3\CMS\Core\Database\DatabaseConnection;
+use TYPO3\CMS\Core\Crypto\Random;
+use TYPO3\CMS\Core\Database\Connection;
+use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\QueryHelper;
 use TYPO3\CMS\Core\Service\AbstractService;
 use TYPO3\CMS\Core\TimeTracker\TimeTracker;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
@@ -67,11 +70,6 @@ class OpenidService extends AbstractService
     protected $parentObject;
 
     /**
-     * @var DatabaseConnection
-     */
-    protected $databaseConnection;
-
-    /**
      * If set to TRUE, than libraries are already included.
      *
      * @var bool
@@ -90,16 +88,6 @@ class OpenidService extends AbstractService
                 define('Auth_Yadis_CURL_OVERRIDE', true);
             }
         }
-
-        $this->injectDatabaseConnection();
-    }
-
-    /**
-     * @param DatabaseConnection $databaseConnection
-     */
-    protected function injectDatabaseConnection(DatabaseConnection $databaseConnection = null)
-    {
-        $this->databaseConnection = $databaseConnection ?: $GLOBALS['TYPO3_DB'];
     }
 
     /**
@@ -212,7 +200,7 @@ class OpenidService extends AbstractService
                         // user actually tried to authenticate using his OpenID. In this case
                         // we must change the password in the record to a long random string so
                         // that this user cannot be authenticated with other service.
-                        $userRecord[$this->authenticationInformation['db_user']['userident_column']] = GeneralUtility::getRandomHexString(42);
+                        $userRecord[$this->authenticationInformation['db_user']['userident_column']] = GeneralUtility::makeInstance(Random::class)->generateRandomHexString(42);
                         $this->writeLog('User \'%s\' logged in with OpenID \'%s\'', $userRecord[$this->parentObject->formfield_uname], $openIDIdentifier);
                     } else {
                         $this->writeLog('Failed to login user using OpenID \'%s\'', $openIDIdentifier);
@@ -307,16 +295,24 @@ class OpenidService extends AbstractService
             $openIDIdentifier = $this->normalizeOpenID($openIDIdentifier);
             // $openIDIdentifier always has a trailing slash
             // but tx_openid_openid field possibly not so check for both alternatives in database
-            $record = $this->databaseConnection->exec_SELECTgetSingleRow(
-                '*',
-                $this->authenticationInformation['db_user']['table'],
-                'tx_openid_openid IN ('
-                . $this->databaseConnection->fullQuoteStr($openIDIdentifier, $this->authenticationInformation['db_user']['table'])
-                . ',' . $this->databaseConnection->fullQuoteStr(rtrim($openIDIdentifier, '/'),
-                $this->authenticationInformation['db_user']['table']) . ')'
-                . $this->authenticationInformation['db_user']['check_pid_clause']
-                . $this->authenticationInformation['db_user']['enable_clause']
-            );
+            $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable($this->authenticationInformation['db_user']['table']);
+            $queryBuilder->getRestrictions()->removeAll();
+            $record = $queryBuilder
+                ->select('*')
+                ->from($this->authenticationInformation['db_user']['table'])
+                ->where(
+                    $queryBuilder->expr()->in(
+                        'tx_openid_openid',
+                        $queryBuilder->createNamedParameter(
+                            [$openIDIdentifier, rtrim($openIDIdentifier, '/')],
+                            Connection::PARAM_STR_ARRAY
+                        )
+                    ),
+                    QueryHelper::stripLogicalOperatorPrefix($this->authenticationInformation['db_user']['check_pid_clause']),
+                    QueryHelper::stripLogicalOperatorPrefix($this->authenticationInformation['db_user']['enable_clause'])
+                )
+                ->execute()
+                ->fetch();
             if ($record) {
                 // Make sure to work only with normalized OpenID during the whole process
                 $record['tx_openid_openid'] = $this->normalizeOpenID($record['tx_openid_openid']);
@@ -494,18 +490,25 @@ class OpenidService extends AbstractService
         }
         // A URI with a missing scheme is normalized to a http URI
         if (!preg_match('#^https?://#', $openIDIdentifier)) {
-            $escapedIdentifier = $this->databaseConnection->quoteStr($openIDIdentifier, $this->authenticationInformation['db_user']['table']);
-            $condition = 'tx_openid_openid IN ('
-                . '\'http://' . $escapedIdentifier . '\','
-                . '\'http://' . $escapedIdentifier . '/\','
-                . '\'https://' . $escapedIdentifier . '\','
-                . '\'https://' . $escapedIdentifier . '/\''
-                . ')';
-            $row = $this->databaseConnection->exec_SELECTgetSingleRow(
-                'tx_openid_openid',
-                $this->authenticationInformation['db_user']['table'],
-                $condition
-            );
+            $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable($this->authenticationInformation['db_user']['table']);
+            $queryBuilder->getRestrictions()->removeAll();
+            $row = $queryBuilder
+                ->select('tx_openid_openid')
+                ->from($this->authenticationInformation['db_user']['table'])
+                ->where(
+                    $queryBuilder->expr()->in('tx_openid_openid', $queryBuilder->createNamedParameter(
+                        [
+                            'http://' . $openIDIdentifier,
+                            'http://' . $openIDIdentifier . '/',
+                            'https://' . $openIDIdentifier,
+                            'https://' . $openIDIdentifier . '/'
+                        ],
+                        Connection::PARAM_STR_ARRAY
+                    ))
+                )
+                ->execute()
+                ->fetch();
+
             if (is_array($row)) {
                 $openIDIdentifier = $row['tx_openid_openid'];
             } else {

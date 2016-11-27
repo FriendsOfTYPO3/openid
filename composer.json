@@ -21,9 +21,9 @@
 		"ext-gmp": "*",
 		"ext-curl": "*",
 		"ext-dom": "*",
-		"typo3/cms-core": "~7.6",
-		"typo3/cms-sv": "~7.6",
-		"typo3/cms-setup": "~7.6"
+		"typo3/cms-core": "~8.5",
+		"typo3/cms-sv": "~8.5",
+		"typo3/cms-setup": "~8.5"
 	},
 	"replace": {
 		"openid": "self.version",
@@ -33,13 +33,6 @@
 	"autoload": {
 		"psr-4": {
 			"FoT3\\Openid\\": "Classes/"
-		}
-	},
-	"extra": {
-		"typo3/class-alias-loader": {
-			"class-alias-maps": [
-				"Migrations/Code/ClassAliasMap.php"
-			]
 		}
 	}
 }
