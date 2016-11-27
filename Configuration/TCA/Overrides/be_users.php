@@ -5,7 +5,7 @@ defined('TYPO3_MODE') or die();
 $tempColumns = array(
     'tx_openid_openid' => array(
         'exclude' => 0,
-        'label' => 'LLL:EXT:openid/locallang_db.xlf:be_users.tx_openid_openid',
+        'label' => 'LLL:EXT:openid/Resources/Private/Language/locallang_db.xlf:be_users.tx_openid_openid',
         'config' => array(
             'type' => 'input',
             'size' => '30',
@@ -28,4 +28,4 @@ $tempColumns = array(
 // Add new columns to be_users table
 \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addTCAcolumns('be_users', $tempColumns);
 \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addToAllTCAtypes('be_users', 'tx_openid_openid', '', 'after:username');
-\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addLLrefForTCAdescr('be_users', 'EXT:openid' . '/locallang_csh.xlf');
+\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addLLrefForTCAdescr('be_users', 'EXT:openid/Resources/Private/Language/locallang_csh.xlf');
