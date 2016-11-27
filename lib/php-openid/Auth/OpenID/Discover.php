@@ -62,7 +62,7 @@ function Auth_OpenID_getOpenIDTypeName($type_uri) {
  * Object representing an OpenID service endpoint.
  */
 class Auth_OpenID_ServiceEndpoint {
-    function Auth_OpenID_ServiceEndpoint()
+    function __construct()
     {
         $this->claimed_id = null;
         $this->server_url = null;
@@ -567,7 +567,7 @@ function Auth_OpenID_discoverXRI($iname, $fetcher)
         $openid_services[$i]->display_identifier = $iname;
     }
 
-    // @todo returned xri should probably be in some normal form
+    // FIXME: returned xri should probably be in some normal form
     return array($iname, $openid_services);
 }
 

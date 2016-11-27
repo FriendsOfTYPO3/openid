@@ -151,7 +151,7 @@ class Auth_OpenID {
         } else if (!array_key_exists('REQUEST_METHOD', $_SERVER)) {
             // Do nothing.
         } else {
-          // @todo XXX HACK FIXME HORRIBLE.
+          // XXX HACK FIXME HORRIBLE.
           //
           // POSTing to a URL with query parameters is acceptable, but
           // we don't have a clean way to distinguish those parameters
@@ -560,5 +560,4 @@ function Auth_OpenID_include_init() {
   if (Auth_OpenID_getMathLib() === null) {
     Auth_OpenID_setNoMathSupport();
   }
-
 }

@@ -2,11 +2,11 @@ This directory contains a modified version of the PHP OpenID library
 (http://www.openidenabled.com/). We use only "Auth" directory from the library
 and include also a copy of COPYING file to conform to the license requirements.
 
-Current version of the library is 2.2.2
-(git-checkout 2014-10-20; commit fff9217fb1acda132702730b66b10981ea9d4cac)
+Current version of the library is 2.3.0
+(git-checkout 2016-11-27; commit d8ef0dba1fa378fc22fe6d423f9423febb2d996d)
 Source: https://github.com/openid/php-openid
 
-The following modifications are made:
+The following modifications are made (search for <TYPO3-specific>):
 - added cURL proxy settings from TYPO3 to the Auth/Yadis/ParanoidHTTPFetcher.php
 
 See also the patch to the library. If the library is updated, the patch should
