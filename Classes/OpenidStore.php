@@ -99,7 +99,7 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
             if ($result === false) {
                 $result = null;
             } else {
-                $this->updateAssociationTimeStamp($row['tstamp']);
+                $this->updateAssociationTimeStamp($row['uid']);
             }
         }
         return $result;
