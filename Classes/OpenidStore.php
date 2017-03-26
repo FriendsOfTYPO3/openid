@@ -182,12 +182,12 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
     {
         $result = false;
         if (abs($timestamp - time()) < $GLOBALS['Auth_OpenID_SKEW']) {
-            $values = array(
+            $values = [
                 'crdate' => time(),
                 'salt' => $salt,
                 'server_url' => $serverUrl,
                 'tstamp' => $timestamp
-            );
+            ];
             $connection = GeneralUtility::makeInstance(ConnectionPool::class)->getConnectionForTable(self::NONCE_TABLE_NAME);
             $affectedRows = $connection->createQueryBuilder()->insert(self::NONCE_TABLE_NAME)->values($values)->execute()->rowCount();
             $result = $affectedRows > 0;

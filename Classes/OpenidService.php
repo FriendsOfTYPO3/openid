@@ -44,7 +44,7 @@ class OpenidService extends AbstractService
      *
      * @var array
      */
-    protected $loginData = array();
+    protected $loginData = [];
 
     /**
      * Additional authentication information provided by AbstractUserAuthentication.
@@ -52,7 +52,7 @@ class OpenidService extends AbstractService
      *
      * @var array
      */
-    protected $authenticationInformation = array();
+    protected $authenticationInformation = [];
 
     /**
      * OpenID response object. It is initialized when OpenID provider returns
@@ -325,11 +325,11 @@ class OpenidService extends AbstractService
 
         // Hook to modify the user record, e.g. to register a new user
         if (isset($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['openid']['getUserRecord']) && is_array($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['openid']['getUserRecord'])) {
-            $_params = array(
+            $_params = [
                 'record' => &$record,
                 'response' => $this->openIDResponse,
                 'authInfo' => $this->authenticationInformation
-            );
+            ];
             foreach ($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['openid']['getUserRecord'] as $funcName) {
                 GeneralUtility::callUserFunction($funcName, $_params, $this);
             }
@@ -383,10 +383,10 @@ class OpenidService extends AbstractService
 
         // Hook to modify the auth request object, e.g. to request additional attributes
         if (isset($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['openid']['authRequest']) && is_array($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['openid']['authRequest'])) {
-            $_params = array(
+            $_params = [
                 'authRequest' => $authenticationRequest,
                 'authInfo' => $this->authenticationInformation
-            );
+            ];
             foreach ($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['openid']['authRequest'] as $funcName) {
                 GeneralUtility::callUserFunction($funcName, $_params, $this);
             }
@@ -412,7 +412,7 @@ class OpenidService extends AbstractService
             @ob_end_clean();
             HttpUtility::redirect($redirectURL, HttpUtility::HTTP_STATUS_303);
         } else {
-            $formHtml = $authenticationRequest->htmlMarkup($trustedRoot, $returnURL, false, array('id' => 'openid_message'));
+            $formHtml = $authenticationRequest->htmlMarkup($trustedRoot, $returnURL, false, ['id' => 'openid_message']);
             // Display an error if the form markup couldn't be generated;
             // otherwise, render the HTML.
             if (\Auth_OpenID::isFailure($formHtml)) {

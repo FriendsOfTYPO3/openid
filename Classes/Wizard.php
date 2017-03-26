@@ -187,7 +187,7 @@ class Wizard extends OpenidService
         $view->assign('formAction', BackendUtility::getModuleUrl('wizard_openid'));
         $view->assign('claimedId', $this->claimedId);
         $view->assign('parentFormItemName', $this->parentFormItemName);
-        $view->assign('parentFormItemNameNoHr', strtr($this->parentFormItemName, array('_hr' => '')));
+        $view->assign('parentFormItemNameNoHr', strtr($this->parentFormItemName, ['_hr' => '']));
         $view->assign('parentFormFieldChangeFunc', $this->parentFormFieldChangeFunc);
         $view->assign('showForm', true);
         if (isset($_REQUEST['openid_url'])) {
