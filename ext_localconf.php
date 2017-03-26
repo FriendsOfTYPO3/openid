@@ -6,7 +6,7 @@ defined('TYPO3_MODE') || die();
     'openid',
     'auth',
     'tx_openid_service_process',
-    array(
+    [
         'title' => 'OpenID Authentication',
         'description' => 'OpenID processing login information service for Frontend and Backend',
         'subtype' => 'processLoginDataBE,processLoginDataFE',
@@ -17,7 +17,7 @@ defined('TYPO3_MODE') || die();
         'os' => '',
         'exec' => '',
         'className' => \FoT3\Openid\OpenidService::class
-    )
+    ]
 );
 
 // Register OpenID authentication service with TYPO3
@@ -25,7 +25,7 @@ defined('TYPO3_MODE') || die();
     'openid',
     'auth',
     'tx_openid_service',
-    array(
+    [
         'title' => 'OpenID Authentication',
         'description' => 'OpenID authentication service for Frontend and Backend',
         'subtype' => 'getUserFE,authUserFE,getUserBE,authUserBE',
@@ -36,7 +36,7 @@ defined('TYPO3_MODE') || die();
         'os' => '',
         'exec' => '',
         'className' => \FoT3\Openid\OpenidService::class
-    )
+    ]
 );
 
 // Register eID script that performs final FE user authentication. It will be called by the OpenID provider
@@ -46,9 +46,9 @@ $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['setup']['accessLevelCheck'][\FoT3\Ope
 // Use popup window to refresh login instead of the AJAX relogin:
 $GLOBALS['TYPO3_CONF_VARS']['BE']['showRefreshLoginPopup'] = 1;
 
-$GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['backend']['loginProviders'][1433416748] = array(
+$GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['backend']['loginProviders'][1433416748] = [
     'provider' => \FoT3\Openid\LoginProvider\OpenIdLoginProvider::class,
     'sorting' => 25,
     'icon-class' => 'fa-openid',
     'label' => 'LLL:EXT:openid/Resources/Private/Language/locallang.xlf:login.link'
-);
+];
