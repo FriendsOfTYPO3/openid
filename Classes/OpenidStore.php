@@ -96,7 +96,7 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
     {
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(self::ASSOCIATION_TABLE_NAME);
         $queryBuilder->getRestrictions()->removeAll();
-        return $queryBuilder->delete(self::ASSOCIATION_TABLE_NAME)->where('expires <= ' . time())->execute()->rowCount();
+        return $queryBuilder->delete(self::ASSOCIATION_TABLE_NAME)->where('expires <= ' . time())->execute();
     }
 
     /**
@@ -152,7 +152,7 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
             ->delete(self::ASSOCIATION_TABLE_NAME)->where(
                 $queryBuilder->expr()->eq('server_url', $queryBuilder->createNamedParameter($serverUrl)),
                 $queryBuilder->expr()->eq('assoc_handle', $queryBuilder->createNamedParameter($handle))
-            )->execute()->rowCount();
+            )->execute();
 
         return $deletedCount > 0;
     }
@@ -189,7 +189,7 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
                 'tstamp' => $timestamp
             ];
             $connection = GeneralUtility::makeInstance(ConnectionPool::class)->getConnectionForTable(self::NONCE_TABLE_NAME);
-            $affectedRows = $connection->createQueryBuilder()->insert(self::NONCE_TABLE_NAME)->values($values)->execute()->rowCount();
+            $affectedRows = $connection->createQueryBuilder()->insert(self::NONCE_TABLE_NAME)->values($values)->execute();
             $result = $affectedRows > 0;
         }
         return $result;
