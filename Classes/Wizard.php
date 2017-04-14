@@ -74,7 +74,7 @@ class Wizard extends OpenidService
             $openIdConsumer = $this->getOpenIDConsumer();
             $this->openIDResponse = $openIdConsumer->complete($this->getReturnUrl(''));
             $this->handleResponse();
-        } elseif ($post['openid_url'] !== '') {
+        } elseif (!empty($post['openid_url'])) {
             $openIDIdentifier = $post['openid_url'];
             $this->sendOpenIDRequest($openIDIdentifier);
 
