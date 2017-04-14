@@ -8,6 +8,4 @@ Source: https://github.com/openid/php-openid
 
 The following modifications are made (search for <TYPO3-specific>):
 - added cURL proxy settings from TYPO3 to the Auth/Yadis/ParanoidHTTPFetcher.php
-
-See also the patch to the library. If the library is updated, the patch should
-be applied to a new version.
+- added phpdocs and some fixes to the library
