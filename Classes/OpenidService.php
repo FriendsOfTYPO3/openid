@@ -100,6 +100,7 @@ class OpenidService extends AbstractService
      */
     public function init()
     {
+
         $available = false;
         if (extension_loaded('gmp')) {
             $available = is_callable('gmp_init');
@@ -149,6 +150,7 @@ class OpenidService extends AbstractService
     public function processLoginData(array &$loginData, $passwordTransmissionStrategy)
     {
         $isProcessed = false;
+
         // Pre-process the login only if no password has been submitted
         if (empty($loginData['uident_text'])) {
             try {
@@ -209,6 +211,10 @@ class OpenidService extends AbstractService
             }
         } elseif (!empty($this->loginData['uident_openid'])) {
             $this->sendOpenIDRequest($this->loginData['uident_openid']);
+        } elseif (!empty(GeneralUtility::_POST('openid_url'))) {
+            $this->includePHPOpenIDLibrary();
+            $openIdUrl = \Auth_OpenID::normalizeUrl(GeneralUtility::_POST('openid_url'));
+            $this->sendOpenIDRequest($openIdUrl);
         }
         return $userRecord;
     }
