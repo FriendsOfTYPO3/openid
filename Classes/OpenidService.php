@@ -17,7 +17,6 @@ namespace FoT3\Openid;
 use TYPO3\CMS\Core\Crypto\Random;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Database\Query\QueryHelper;
 use TYPO3\CMS\Core\Service\AbstractService;
 use TYPO3\CMS\Core\TimeTracker\TimeTracker;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
@@ -308,8 +307,8 @@ class OpenidService extends AbstractService
                             Connection::PARAM_STR_ARRAY
                         )
                     ),
-                    QueryHelper::stripLogicalOperatorPrefix($this->authenticationInformation['db_user']['check_pid_clause']),
-                    QueryHelper::stripLogicalOperatorPrefix($this->authenticationInformation['db_user']['enable_clause'])
+                    $this->authenticationInformation['db_user']['check_pid_clause'],
+                    $this->authenticationInformation['db_user']['enable_clause']
                 )
                 ->execute()
                 ->fetch();
