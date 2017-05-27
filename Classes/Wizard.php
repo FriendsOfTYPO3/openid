@@ -109,7 +109,7 @@ class Wizard extends OpenidService
             'P[itemName]' => $this->parentFormItemName,
             'P[fieldChangeFunc][TBE_EDITOR_fieldChanged]' => $this->parentFormFieldChangeFunc
         ];
-        return BackendUtility::getModuleUrl('wizard_openid', $parameters);
+        return GeneralUtility::getIndpEnv('TYPO3_REQUEST_HOST') . BackendUtility::getModuleUrl('wizard_openid', $parameters);
     }
 
     /**
