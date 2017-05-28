@@ -14,7 +14,7 @@ Administration
 
 The extension should be installed as usual using TYPO3 Extension
 Manager. Notice that this extension can work only as a system
-extension. It requires at least TYPO3 6.2 and PHP 5.3.7.
+extension. It requires at least TYPO3 8.7.
 
 After installation OpenID identifiers should be added to the Frontend
 and Backend user records who need to authenticate themselves using
