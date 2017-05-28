@@ -114,7 +114,7 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
         $queryBuilder->getRestrictions()->removeAll();
         $queryBuilder->select('uid', 'content')->from(self::ASSOCIATION_TABLE_NAME)->where(
             $queryBuilder->expr()->eq('server_url', $queryBuilder->createNamedParameter($serverUrl)),
-            $queryBuilder->expr()->eq('expires', $queryBuilder->createNamedParameter(time(), \PDO::PARAM_INT))
+            $queryBuilder->expr()->gt('expires', $queryBuilder->createNamedParameter(time(), \PDO::PARAM_INT))
         );
         if ($handle !== null) {
             $queryBuilder->andWhere($queryBuilder->expr()->eq('assoc_handle', $queryBuilder->createNamedParameter($handle)));
@@ -130,7 +130,7 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
             } else {
                 $queryBuilder
                     ->update(self::ASSOCIATION_TABLE_NAME)
-                    ->values(['tstamp' => time()])
+                    ->set('tstamp',time())
                     ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($row['uid'], \PDO::PARAM_INT)))
                     ->execute();
             }
