@@ -18,6 +18,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
+use TYPO3\CMS\Core\Messaging\FlashMessageRendererResolver;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Fluid\View\StandaloneView;
@@ -138,7 +139,7 @@ class Wizard extends OpenidService
                 FlashMessage::class,
                 sprintf(
                     $lang->sL('LLL:EXT:openid/Resources/Private/Language/locallang.xlf:youropenid'),
-                    htmlspecialchars($this->claimedId)
+                    $this->claimedId
                 ),
                 $lang->sL('LLL:EXT:openid/Resources/Private/Language/locallang.xlf:title.success'),
                 FlashMessage::OK
@@ -182,8 +183,13 @@ class Wizard extends OpenidService
 
         /** @var $flashMessageService FlashMessageService */
         $flashMessageService = GeneralUtility::makeInstance(FlashMessageService::class);
+        $flashMessages = $flashMessageService->getMessageQueueByIdentifier()->getAllMessagesAndFlush();
 
-        $view->assign('messages', $flashMessageService->getMessageQueueByIdentifier()->getAllMessagesAndFlush());
+        $renderedFlashMessages = GeneralUtility::makeInstance(FlashMessageRendererResolver::class)
+                                               ->resolve()
+                                               ->render($flashMessages);
+
+        $view->assign('messages', $renderedFlashMessages);
         $view->assign('formAction', BackendUtility::getModuleUrl('wizard_openid'));
         $view->assign('claimedId', $this->claimedId);
         $view->assign('parentFormItemName', $this->parentFormItemName);
