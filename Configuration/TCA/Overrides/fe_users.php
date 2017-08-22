@@ -5,7 +5,7 @@ defined('TYPO3_MODE') or die();
 $tempColumns = [
     'tx_openid_openid' => [
         'exclude' => 0,
-        'label' => 'LLL:EXT:openid/locallang_db.xlf:be_users.tx_openid_openid',
+        'label' => 'LLL:EXT:openid/Resources/Private/Language/locallang_db.xlf:be_users.tx_openid_openid',
         'config' => [
             'type' => 'input',
             'size' => '30',
