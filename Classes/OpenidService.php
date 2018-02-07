@@ -17,6 +17,7 @@ namespace FoT3\Openid;
 use TYPO3\CMS\Core\Crypto\Random;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Service\AbstractService;
 use TYPO3\CMS\Core\TimeTracker\TimeTracker;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
@@ -280,6 +281,7 @@ class OpenidService extends AbstractService
             $openIDIdentifier = $this->normalizeOpenID($openIDIdentifier);
             // $openIDIdentifier always has a trailing slash
             // but tx_openid_openid field possibly not so check for both alternatives in database
+            /** @var QueryBuilder $queryBuilder */
             $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable($this->authenticationInformation['db_user']['table']);
             $queryBuilder->getRestrictions()->removeAll();
             $record = $queryBuilder
@@ -475,6 +477,7 @@ class OpenidService extends AbstractService
         }
         // A URI with a missing scheme is normalized to a http URI
         if (!preg_match('#^https?://#', $openIDIdentifier)) {
+            /** @var QueryBuilder $queryBuilder */
             $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable($this->authenticationInformation['db_user']['table']);
             $queryBuilder->getRestrictions()->removeAll();
             $row = $queryBuilder

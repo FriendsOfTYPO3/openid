@@ -14,7 +14,9 @@ namespace FoT3\Openid;
  * The TYPO3 project - inspiring people to share!
  */
 
+use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
@@ -95,6 +97,7 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
      */
     public function cleanupAssociations()
     {
+        /** @var QueryBuilder $queryBuilder */
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(self::ASSOCIATION_TABLE_NAME);
         $queryBuilder->getRestrictions()->removeAll();
         return $queryBuilder->delete(self::ASSOCIATION_TABLE_NAME)->where('expires <= ' . time())->execute();
@@ -110,6 +113,7 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
     public function getAssociation($serverUrl, $handle = null)
     {
         $this->cleanupAssociations();
+        /** @var QueryBuilder $queryBuilder */
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(self::ASSOCIATION_TABLE_NAME);
         $queryBuilder->getRestrictions()->removeAll();
         $queryBuilder->select('uid', 'content')->from(self::ASSOCIATION_TABLE_NAME)->where(
@@ -147,6 +151,7 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
      */
     public function removeAssociation($serverUrl, $handle)
     {
+        /** @var QueryBuilder $queryBuilder */
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(self::ASSOCIATION_TABLE_NAME);
         $queryBuilder->getRestrictions()->removeAll();
         $deletedCount = $queryBuilder
@@ -166,6 +171,7 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
     public function cleanupNonces()
     {
         $where = 'crdate < ' . (time() - self::NONCE_STORAGE_TIME);
+        /** @var QueryBuilder $queryBuilder */
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(self::NONCE_TABLE_NAME);
         $queryBuilder->getRestrictions()->removeAll();
         $queryBuilder->delete(self::NONCE_TABLE_NAME)->where($where)->execute();
@@ -189,6 +195,7 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
                 'server_url' => $serverUrl,
                 'tstamp' => $timestamp
             ];
+            /** @var Connection $connection */
             $connection = GeneralUtility::makeInstance(ConnectionPool::class)->getConnectionForTable(self::NONCE_TABLE_NAME);
             $affectedRows = $connection->createQueryBuilder()->insert(self::NONCE_TABLE_NAME)->values($values)->execute();
             $result = $affectedRows > 0;
