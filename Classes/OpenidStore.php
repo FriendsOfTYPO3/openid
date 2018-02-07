@@ -14,7 +14,9 @@ namespace FoT3\Openid;
  * The TYPO3 project - inspiring people to share!
  */
 
+use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
@@ -41,38 +43,39 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
      */
     public function storeAssociation($serverUrl, $association)
     {
-        $builder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(self::ASSOCIATION_TABLE_NAME);
-        $builder->getRestrictions()->removeAll();
+        /** @var QueryBuilder $queryBuilder */
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(self::ASSOCIATION_TABLE_NAME);
+        $queryBuilder->getRestrictions()->removeAll();
 
-        $builder->getConnection()->beginTransaction();
+        $queryBuilder->getConnection()->beginTransaction();
 
-        $existingAssociations = $builder
+        $existingAssociations = $queryBuilder
             ->count('*')
             ->from(self::ASSOCIATION_TABLE_NAME)
             ->where(
-                $builder->expr()->eq('server_url', $builder->createNamedParameter($serverUrl)),
-                $builder->expr()->eq('assoc_handle', $builder->createNamedParameter($association->handle)),
-                $builder->expr()->eq('expires', $builder->createNamedParameter(time(), \PDO::PARAM_INT))
+                $queryBuilder->expr()->eq('server_url', $queryBuilder->createNamedParameter($serverUrl)),
+                $queryBuilder->expr()->eq('assoc_handle', $queryBuilder->createNamedParameter($association->handle)),
+                $queryBuilder->expr()->eq('expires', $queryBuilder->createNamedParameter(time(), \PDO::PARAM_INT))
             )
             ->execute()
             ->fetchColumn();
 
         if ($existingAssociations) {
-            $builder
+            $queryBuilder
                 ->update(self::ASSOCIATION_TABLE_NAME)
                 ->values([
                     'content' => base64_encode(serialize($association)),
                     'tstamp' => time()
                 ])
                 ->where(
-                    $builder->expr()->eq('server_url', $builder->createNamedParameter($serverUrl)),
-                    $builder->expr()->eq('assoc_handle', $builder->createNamedParameter($association->handle)),
-                    $builder->expr()->eq('expires', $builder->createNamedParameter(time(), \PDO::PARAM_INT))
+                    $queryBuilder->expr()->eq('server_url', $queryBuilder->createNamedParameter($serverUrl)),
+                    $queryBuilder->expr()->eq('assoc_handle', $queryBuilder->createNamedParameter($association->handle)),
+                    $queryBuilder->expr()->eq('expires', $queryBuilder->createNamedParameter(time(), \PDO::PARAM_INT))
                 )
                 ->execute();
         } else {
             // In the next query we can get race conditions. sha1_hash prevents many associations from being stored for one server
-            $builder
+            $queryBuilder
                 ->insert(self::ASSOCIATION_TABLE_NAME)
                 ->values([
                     'assoc_handle' => $association->handle,
@@ -85,7 +88,7 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
                 ->execute();
         }
 
-        $builder->getConnection()->commit();
+        $queryBuilder->getConnection()->commit();
     }
 
     /**
@@ -95,6 +98,7 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
      */
     public function cleanupAssociations()
     {
+        /** @var QueryBuilder $queryBuilder */
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(self::ASSOCIATION_TABLE_NAME);
         $queryBuilder->getRestrictions()->removeAll();
         return $queryBuilder->delete(self::ASSOCIATION_TABLE_NAME)->where('expires <= ' . time())->execute();
@@ -110,6 +114,7 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
     public function getAssociation($serverUrl, $handle = null)
     {
         $this->cleanupAssociations();
+        /** @var QueryBuilder $queryBuilder */
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(self::ASSOCIATION_TABLE_NAME);
         $queryBuilder->getRestrictions()->removeAll();
         $queryBuilder->select('uid', 'content')->from(self::ASSOCIATION_TABLE_NAME)->where(
@@ -147,6 +152,7 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
      */
     public function removeAssociation($serverUrl, $handle)
     {
+        /** @var QueryBuilder $queryBuilder */
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(self::ASSOCIATION_TABLE_NAME);
         $queryBuilder->getRestrictions()->removeAll();
         $deletedCount = $queryBuilder
@@ -166,6 +172,7 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
     public function cleanupNonces()
     {
         $where = 'crdate < ' . (time() - self::NONCE_STORAGE_TIME);
+        /** @var QueryBuilder $queryBuilder */
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(self::NONCE_TABLE_NAME);
         $queryBuilder->getRestrictions()->removeAll();
         $queryBuilder->delete(self::NONCE_TABLE_NAME)->where($where)->execute();
@@ -189,6 +196,7 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
                 'server_url' => $serverUrl,
                 'tstamp' => $timestamp
             ];
+            /** @var Connection $connection */
             $connection = GeneralUtility::makeInstance(ConnectionPool::class)->getConnectionForTable(self::NONCE_TABLE_NAME);
             $affectedRows = $connection->createQueryBuilder()->insert(self::NONCE_TABLE_NAME)->values($values)->execute();
             $result = $affectedRows > 0;
