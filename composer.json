@@ -21,9 +21,8 @@
 		"ext-gmp": "*",
 		"ext-curl": "*",
 		"ext-dom": "*",
-		"typo3/cms-core": "~8.5",
-		"typo3/cms-sv": "~8.5",
-		"typo3/cms-setup": "~8.5"
+		"typo3/cms-core": "~9.0",
+		"typo3/cms-setup": "~9.0"
 	},
 	"replace": {
 		"openid": "self.version",
