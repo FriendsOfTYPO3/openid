@@ -43,38 +43,39 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
      */
     public function storeAssociation($serverUrl, $association)
     {
-        $builder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(self::ASSOCIATION_TABLE_NAME);
-        $builder->getRestrictions()->removeAll();
+        /** @var QueryBuilder $queryBuilder */
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(self::ASSOCIATION_TABLE_NAME);
+        $queryBuilder->getRestrictions()->removeAll();
 
-        $builder->getConnection()->beginTransaction();
+        $queryBuilder->getConnection()->beginTransaction();
 
-        $existingAssociations = $builder
+        $existingAssociations = $queryBuilder
             ->count('*')
             ->from(self::ASSOCIATION_TABLE_NAME)
             ->where(
-                $builder->expr()->eq('server_url', $builder->createNamedParameter($serverUrl)),
-                $builder->expr()->eq('assoc_handle', $builder->createNamedParameter($association->handle)),
-                $builder->expr()->eq('expires', $builder->createNamedParameter(time(), \PDO::PARAM_INT))
+                $queryBuilder->expr()->eq('server_url', $queryBuilder->createNamedParameter($serverUrl)),
+                $queryBuilder->expr()->eq('assoc_handle', $queryBuilder->createNamedParameter($association->handle)),
+                $queryBuilder->expr()->eq('expires', $queryBuilder->createNamedParameter(time(), \PDO::PARAM_INT))
             )
             ->execute()
             ->fetchColumn();
 
         if ($existingAssociations) {
-            $builder
+            $queryBuilder
                 ->update(self::ASSOCIATION_TABLE_NAME)
                 ->values([
                     'content' => base64_encode(serialize($association)),
                     'tstamp' => time()
                 ])
                 ->where(
-                    $builder->expr()->eq('server_url', $builder->createNamedParameter($serverUrl)),
-                    $builder->expr()->eq('assoc_handle', $builder->createNamedParameter($association->handle)),
-                    $builder->expr()->eq('expires', $builder->createNamedParameter(time(), \PDO::PARAM_INT))
+                    $queryBuilder->expr()->eq('server_url', $queryBuilder->createNamedParameter($serverUrl)),
+                    $queryBuilder->expr()->eq('assoc_handle', $queryBuilder->createNamedParameter($association->handle)),
+                    $queryBuilder->expr()->eq('expires', $queryBuilder->createNamedParameter(time(), \PDO::PARAM_INT))
                 )
                 ->execute();
         } else {
             // In the next query we can get race conditions. sha1_hash prevents many associations from being stored for one server
-            $builder
+            $queryBuilder
                 ->insert(self::ASSOCIATION_TABLE_NAME)
                 ->values([
                     'assoc_handle' => $association->handle,
@@ -87,7 +88,7 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
                 ->execute();
         }
 
-        $builder->getConnection()->commit();
+        $queryBuilder->getConnection()->commit();
     }
 
     /**
