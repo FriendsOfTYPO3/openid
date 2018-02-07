@@ -521,7 +521,7 @@ class OpenidService extends AbstractService
      */
     protected function getBackPath()
     {
-        $extPath = ExtensionManagementUtility::siteRelPath('openid');
+        $extPath = ExtensionManagementUtility::extPath('openid');
         $segmentCount = count(explode('/', $extPath));
         $path = str_pad('', $segmentCount * 3, '../') . TYPO3_mainDir;
         return $path;
