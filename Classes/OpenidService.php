@@ -171,7 +171,6 @@ class OpenidService extends AbstractService
         }
         $userRecord = null;
         if ($this->openIDResponse instanceof \Auth_OpenID_ConsumerResponse) {
-            $GLOBALS['BACK_PATH'] = $this->getBackPath();
             // We are running inside the OpenID return script
             // Note: we cannot use $this->openIDResponse->getDisplayIdentifier()
             // because it may return a different identifier. For example,
@@ -512,19 +511,6 @@ class OpenidService extends AbstractService
             $openIDIdentifier .= '/';
         }
         return $openIDIdentifier;
-    }
-
-    /**
-     * Calculates the path to the TYPO3 directory from the current directory
-     *
-     * @return string
-     */
-    protected function getBackPath()
-    {
-        $extPath = ExtensionManagementUtility::extPath('openid');
-        $segmentCount = count(explode('/', $extPath));
-        $path = str_pad('', $segmentCount * 3, '../') . TYPO3_mainDir;
-        return $path;
     }
 
     /**
