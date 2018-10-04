@@ -8,7 +8,7 @@
 	"authors": [
 		{
 			"name": "Dmitry Dulepov",
-			"email": "dmitry@typo3.org",
+			"email": "dmitry.dulepov@gmail.com",
 			"role": "Developer"
 		},
 		{
@@ -21,8 +21,8 @@
 		"ext-gmp": "*",
 		"ext-curl": "*",
 		"ext-dom": "*",
-		"typo3/cms-core": "~9.0",
-		"typo3/cms-setup": "~9.0"
+		"typo3/cms-core": "~9.5",
+		"typo3/cms-setup": "~9.5"
 	},
 	"replace": {
 		"openid": "self.version",
