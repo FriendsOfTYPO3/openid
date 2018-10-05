@@ -59,7 +59,7 @@ class OpenidModuleSetup
                 'vHWin=window.open(' . $popUpUrl . ',null,\'width=800,height=600,status=0,menubar=0,scrollbars=0\');' .
                 'vHWin.focus();return false;' .
                 '">' .
-                    '<img src="../typo3conf/ext/openid/ext_icon_small.png" alt="' . $add . '" title="' . $add . '"/>' .
+                    '<img src="../typo3conf/ext/openid/Resources/Public/Icons/ext_icon_small.png" alt="' . $add . '" title="' . $add . '"/>' .
                 '</a>' .
             '</div>' .
             '</div>';
