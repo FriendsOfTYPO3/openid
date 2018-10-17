@@ -18,7 +18,7 @@ $tempColumns = [
                     'module' => [
                         'name' => 'wizard_openid'
                     ],
-                    'icon' => 'EXT:openid/ext_icon_small.png',
+                    'icon' => 'EXT:openid/Resources/Public/Icons/ext_icon_small.png',
                     'JSopenParams' => ',width=800,height=600,status=0,menubar=0,scrollbars=0',
                 ]
             ],

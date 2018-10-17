@@ -17,6 +17,7 @@ namespace FoT3\Openid;
 use TYPO3\CMS\Core\Crypto\Random;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Service\AbstractService;
 use TYPO3\CMS\Core\TimeTracker\TimeTracker;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
@@ -170,7 +171,6 @@ class OpenidService extends AbstractService
         }
         $userRecord = null;
         if ($this->openIDResponse instanceof \Auth_OpenID_ConsumerResponse) {
-            $GLOBALS['BACK_PATH'] = $this->getBackPath();
             // We are running inside the OpenID return script
             // Note: we cannot use $this->openIDResponse->getDisplayIdentifier()
             // because it may return a different identifier. For example,
@@ -280,6 +280,7 @@ class OpenidService extends AbstractService
             $openIDIdentifier = $this->normalizeOpenID($openIDIdentifier);
             // $openIDIdentifier always has a trailing slash
             // but tx_openid_openid field possibly not so check for both alternatives in database
+            /** @var QueryBuilder $queryBuilder */
             $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable($this->authenticationInformation['db_user']['table']);
             $queryBuilder->getRestrictions()->removeAll();
             $record = $queryBuilder
@@ -475,6 +476,7 @@ class OpenidService extends AbstractService
         }
         // A URI with a missing scheme is normalized to a http URI
         if (!preg_match('#^https?://#', $openIDIdentifier)) {
+            /** @var QueryBuilder $queryBuilder */
             $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable($this->authenticationInformation['db_user']['table']);
             $queryBuilder->getRestrictions()->removeAll();
             $row = $queryBuilder
@@ -509,19 +511,6 @@ class OpenidService extends AbstractService
             $openIDIdentifier .= '/';
         }
         return $openIDIdentifier;
-    }
-
-    /**
-     * Calculates the path to the TYPO3 directory from the current directory
-     *
-     * @return string
-     */
-    protected function getBackPath()
-    {
-        $extPath = ExtensionManagementUtility::siteRelPath('openid');
-        $segmentCount = count(explode('/', $extPath));
-        $path = str_pad('', $segmentCount * 3, '../') . TYPO3_mainDir;
-        return $path;
     }
 
     /**
@@ -597,10 +586,6 @@ class OpenidService extends AbstractService
         }
         if (TYPO3_MODE === 'BE') {
             GeneralUtility::sysLog($message, $this->extKey, GeneralUtility::SYSLOG_SEVERITY_NOTICE);
-        } else {
-            /** @var TimeTracker $tt */
-            $tt = $GLOBALS['TT'];
-            $tt->setTSlogMessage($message);
         }
         if ($GLOBALS['TYPO3_CONF_VARS']['SYS']['enable_DLOG']) {
             GeneralUtility::devLog($message, $this->extKey, GeneralUtility::SYSLOG_SEVERITY_NOTICE);

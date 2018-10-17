@@ -4,8 +4,8 @@
 
 ---
 conf.py:
-  copyright: 1997-2017
+  copyright: 1997-2018
   project: OpenID authentication
   version: 8
-  release: 8.0.2
+  release: 8.1.0
 ...
