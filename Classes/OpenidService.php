@@ -597,12 +597,6 @@ class OpenidService extends AbstractService
         }
         if (TYPO3_MODE === 'BE') {
             GeneralUtility::sysLog($message, $this->extKey, GeneralUtility::SYSLOG_SEVERITY_NOTICE);
-        } else {
-            /** @var TimeTracker $tt */
-            $tt = $GLOBALS['TT'];
-            if ($tt instanceof TimeTracker) {
-                $tt->setTSlogMessage($message);
-            }
         }
         if ($GLOBALS['TYPO3_CONF_VARS']['SYS']['enable_DLOG']) {
             GeneralUtility::devLog($message, $this->extKey, GeneralUtility::SYSLOG_SEVERITY_NOTICE);
