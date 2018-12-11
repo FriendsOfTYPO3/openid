@@ -44,4 +44,4 @@ CREATE TABLE tx_openid_nonce_store (
 	PRIMARY KEY (uid),
 	UNIQUE KEY nonce (server_url(255),tstamp,salt),
 	KEY crdate (crdate)
-) ENGINE=InnoDB;
+) DEFAULT CHARSET = utf8 COLLATE utf8_general_ci ENGINE=InnoDB;
