@@ -21,7 +21,7 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Log\LogManager;
 use TYPO3\CMS\Core\Service\AbstractService;
-use TYPO3\CMS\Core\TimeTracker\TimeTracker;
+use TYPO3\CMS\Core\SingletonInterface;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Authentication\AbstractUserAuthentication;
@@ -32,7 +32,7 @@ require_once ExtensionManagementUtility::extPath('openid') . 'lib/php-openid/Aut
 /**
  * Service "OpenID Authentication" for the "openid" extension.
  */
-class OpenidService extends AbstractService
+class OpenidService extends AbstractService implements SingletonInterface
 {
     /**
      * The extension key
