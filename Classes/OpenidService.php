@@ -14,10 +14,12 @@ namespace FoT3\Openid;
  * The TYPO3 project - inspiring people to share!
  */
 
+use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Crypto\Random;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
+use TYPO3\CMS\Core\Log\LogManager;
 use TYPO3\CMS\Core\Service\AbstractService;
 use TYPO3\CMS\Core\TimeTracker\TimeTracker;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
@@ -76,6 +78,9 @@ class OpenidService extends AbstractService
      */
     protected static $openIDLibrariesIncluded = false;
 
+    /** @var \Psr\Log\LoggerInterface */
+    protected $logger;
+
     /**
      * Checks if service is available,. In case of this service we check that
      * prerequisites for "PHP OpenID" libraries are fulfilled:
@@ -86,6 +91,8 @@ class OpenidService extends AbstractService
      */
     public function init()
     {
+        $this->logger = GeneralUtility::makeInstance(LogManager::class)->getLogger(__CLASS__);
+
         $available = false;
         if (extension_loaded('gmp')) {
             $available = is_callable('gmp_init');
@@ -244,7 +251,7 @@ class OpenidService extends AbstractService
         // Make sure that random generator is properly set up. Constant could be
         // defined by the previous inclusion of the file
         if (!defined('Auth_OpenID_RAND_SOURCE')) {
-            if (TYPO3_OS === 'WIN') {
+            if (Environment::isWindows()) {
                 // No random generator on Windows!
                 define('Auth_OpenID_RAND_SOURCE', null);
             } elseif (!is_readable('/dev/urandom')) {
@@ -584,11 +591,7 @@ class OpenidService extends AbstractService
             array_shift($params);
             $message = vsprintf($message, $params);
         }
-        if (TYPO3_MODE === 'BE') {
-            GeneralUtility::sysLog($message, $this->extKey, GeneralUtility::SYSLOG_SEVERITY_NOTICE);
-        }
-        if ($GLOBALS['TYPO3_CONF_VARS']['SYS']['enable_DLOG']) {
-            GeneralUtility::devLog($message, $this->extKey, GeneralUtility::SYSLOG_SEVERITY_NOTICE);
-        }
+
+        $this->logger->notice($message);
     }
 }
