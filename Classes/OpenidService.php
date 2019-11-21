@@ -14,6 +14,8 @@ namespace FoT3\Openid;
  * The TYPO3 project - inspiring people to share!
  */
 
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerAwareTrait;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Crypto\Random;
 use TYPO3\CMS\Core\Database\Connection;
@@ -32,8 +34,10 @@ require_once ExtensionManagementUtility::extPath('openid') . 'lib/php-openid/Aut
 /**
  * Service "OpenID Authentication" for the "openid" extension.
  */
-class OpenidService extends AbstractService implements SingletonInterface
+class OpenidService extends AbstractService implements SingletonInterface, LoggerAwareInterface
 {
+    use LoggerAwareTrait;
+
     /**
      * The extension key
      *
@@ -78,9 +82,6 @@ class OpenidService extends AbstractService implements SingletonInterface
      */
     protected static $openIDLibrariesIncluded = false;
 
-    /** @var \Psr\Log\LoggerInterface */
-    protected $logger;
-
     /**
      * Checks if service is available,. In case of this service we check that
      * prerequisites for "PHP OpenID" libraries are fulfilled:
@@ -91,7 +92,7 @@ class OpenidService extends AbstractService implements SingletonInterface
      */
     public function init()
     {
-        $this->logger = GeneralUtility::makeInstance(LogManager::class)->getLogger(__CLASS__);
+        $this->setLogger(GeneralUtility::makeInstance(LogManager::class)->getLogger(__CLASS__));
 
         $available = false;
         if (extension_loaded('gmp')) {
