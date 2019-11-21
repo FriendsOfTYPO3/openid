@@ -4,3 +4,6 @@ We use only "Auth" directory from the library and include a copy of COPYING file
 Current version of the library is 2.3.0
 (git-checkout 3847f38; # from 2017-04-14)
 Source: https://github.com/openid/php-openid
+
+Additionally copied the following bugfix to this version: https://github.com/openid/php-openid/pull/140
+
