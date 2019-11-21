@@ -252,7 +252,12 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
         // Make sure that random generator is properly set up. Constant could be
         // defined by the previous inclusion of the file
         if (!defined('Auth_OpenID_RAND_SOURCE')) {
-            if (TYPO3_OS === 'WIN') {
+            if (class_exists(\TYPO3\CMS\Core\Core\Environment::class)) {
+                $isWindows = \TYPO3\CMS\Core\Core\Environment::isWindows();
+            } else {
+                $isWindows = defined('TYPO3_OS' ) && TYPO3_OS === 'WIN';
+            }
+            if ($isWindows) {
                 // No random generator on Windows!
                 define('Auth_OpenID_RAND_SOURCE', null);
             } elseif (!is_readable('/dev/urandom')) {
