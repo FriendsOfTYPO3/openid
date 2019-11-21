@@ -22,7 +22,6 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Log\LogManager;
 use TYPO3\CMS\Core\Service\AbstractService;
-use TYPO3\CMS\Core\TimeTracker\TimeTracker;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Authentication\AbstractUserAuthentication;
@@ -583,7 +582,6 @@ class OpenidService extends AbstractService implements LoggerAwareInterface
      * @param string $message Message to output
      * @return void
      * @see GeneralUtility::sysLog()
-     * @see \TYPO3\CMS\Core\TimeTracker\TimeTracker::setTSlogMessage()
      */
     protected function writeLog($message)
     {
