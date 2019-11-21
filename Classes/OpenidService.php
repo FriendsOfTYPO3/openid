@@ -14,10 +14,13 @@ namespace FoT3\Openid;
  * The TYPO3 project - inspiring people to share!
  */
 
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerAwareTrait;
 use TYPO3\CMS\Core\Crypto\Random;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
+use TYPO3\CMS\Core\Log\LogManager;
 use TYPO3\CMS\Core\Service\AbstractService;
 use TYPO3\CMS\Core\TimeTracker\TimeTracker;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
@@ -30,8 +33,10 @@ require_once ExtensionManagementUtility::extPath('openid') . 'lib/php-openid/Aut
 /**
  * Service "OpenID Authentication" for the "openid" extension.
  */
-class OpenidService extends AbstractService
+class OpenidService extends AbstractService implements LoggerAwareInterface
 {
+    use LoggerAwareTrait;
+
     /**
      * The extension key
      *
@@ -86,6 +91,9 @@ class OpenidService extends AbstractService
      */
     public function init()
     {
+        // this line needs to stay for TYPO3 v8 compatibility
+        $this->setLogger(GeneralUtility::makeInstance(LogManager::class)->getLogger(__CLASS__));
+
         $available = false;
         if (extension_loaded('gmp')) {
             $available = is_callable('gmp_init');
@@ -584,10 +592,17 @@ class OpenidService extends AbstractService
             array_shift($params);
             $message = vsprintf($message, $params);
         }
-        if (TYPO3_MODE === 'BE') {
+
+        $this->logger->notice($message);
+
+        if (version_compare(TYPO3_branch, '8.7', '>')) {
+            return;
+        }
+
+        if (defined('TYPO3_MODE') && TYPO3_MODE === 'BE') {
             GeneralUtility::sysLog($message, $this->extKey, GeneralUtility::SYSLOG_SEVERITY_NOTICE);
         }
-        if ($GLOBALS['TYPO3_CONF_VARS']['SYS']['enable_DLOG']) {
+        if (!empty($GLOBALS['TYPO3_CONF_VARS']['SYS']['enable_DLOG'])) {
             GeneralUtility::devLog($message, $this->extKey, GeneralUtility::SYSLOG_SEVERITY_NOTICE);
         }
     }
