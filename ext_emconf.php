@@ -11,8 +11,8 @@ $EM_CONF[$_EXTKEY] = [
     'version' => '8.1.1',
     'constraints' => [
         'depends' => [
-            'typo3' => '8.7.19-9.5.999',
-            'setup' => '8.7.19-9.5.999',
+            'typo3' => '8.7.19-10.999.999',
+            'setup' => '8.7.19-10.999.999',
         ],
         'conflicts' => [
             'naw_openid' => '',
