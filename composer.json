@@ -25,7 +25,6 @@
 		"typo3/cms-setup": ">=8.7.19,<=9.5.999"
 	},
 	"replace": {
-		"openid": "self.version",
 		"typo3/cms-openid": "self.version",
 		"typo3-ter/openid": "self.version"
 	},
