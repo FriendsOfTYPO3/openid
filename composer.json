@@ -9,11 +9,6 @@
 		{
 			"name": "Dmitry Dulepov",
 			"email": "dmitry.dulepov@gmail.com",
-			"role": "Developer"
-		},
-		{
-			"name": "Markus Klein",
-			"email": "markus.klein@typo3.org",
 			"role": "Maintainer"
 		}
 	],
