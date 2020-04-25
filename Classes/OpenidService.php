@@ -16,7 +16,6 @@ namespace FoT3\Openid;
 
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
-use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Crypto\Random;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
@@ -34,7 +33,7 @@ require_once ExtensionManagementUtility::extPath('openid') . 'lib/php-openid/Aut
 /**
  * Service "OpenID Authentication" for the "openid" extension.
  */
-class OpenidService extends AbstractService implements SingletonInterface, LoggerAwareInterface
+class OpenidService extends AbstractService implements LoggerAwareInterface, SingletonInterface
 {
     use LoggerAwareTrait;
 
@@ -92,6 +91,7 @@ class OpenidService extends AbstractService implements SingletonInterface, Logge
      */
     public function init()
     {
+        // this line needs to stay for TYPO3 v8 compatibility
         $this->setLogger(GeneralUtility::makeInstance(LogManager::class)->getLogger(__CLASS__));
 
         $available = false;
@@ -252,7 +252,12 @@ class OpenidService extends AbstractService implements SingletonInterface, Logge
         // Make sure that random generator is properly set up. Constant could be
         // defined by the previous inclusion of the file
         if (!defined('Auth_OpenID_RAND_SOURCE')) {
-            if (Environment::isWindows()) {
+            if (class_exists(\TYPO3\CMS\Core\Core\Environment::class)) {
+                $isWindows = \TYPO3\CMS\Core\Core\Environment::isWindows();
+            } else {
+                $isWindows = defined('TYPO3_OS' ) && TYPO3_OS === 'WIN';
+            }
+            if ($isWindows) {
                 // No random generator on Windows!
                 define('Auth_OpenID_RAND_SOURCE', null);
             } elseif (!is_readable('/dev/urandom')) {
@@ -583,7 +588,6 @@ class OpenidService extends AbstractService implements SingletonInterface, Logge
      * @param string $message Message to output
      * @return void
      * @see GeneralUtility::sysLog()
-     * @see \TYPO3\CMS\Core\TimeTracker\TimeTracker::setTSlogMessage()
      */
     protected function writeLog($message)
     {
@@ -594,5 +598,16 @@ class OpenidService extends AbstractService implements SingletonInterface, Logge
         }
 
         $this->logger->notice($message);
+
+        if (version_compare(TYPO3_branch, '8.7', '>')) {
+            return;
+        }
+
+        if (defined('TYPO3_MODE') && TYPO3_MODE === 'BE') {
+            GeneralUtility::sysLog($message, $this->extKey, GeneralUtility::SYSLOG_SEVERITY_NOTICE);
+        }
+        if (!empty($GLOBALS['TYPO3_CONF_VARS']['SYS']['enable_DLOG'])) {
+            GeneralUtility::devLog($message, $this->extKey, GeneralUtility::SYSLOG_SEVERITY_NOTICE);
+        }
     }
 }
