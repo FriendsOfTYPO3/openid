@@ -12,9 +12,12 @@
 Administration
 --------------
 
-The extension should be installed as usual using TYPO3 Extension
-Manager. Notice that this extension can work only as a system
-extension. It requires at least TYPO3 8.7.
+The extension should be installed using composer:
+
+.. code-block:: bash
+
+   composer require "friendsoftypo3/openid"
+
 
 After installation OpenID identifiers should be added to the Frontend
 and Backend user records who need to authenticate themselves using
