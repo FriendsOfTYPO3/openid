@@ -31,7 +31,7 @@ class OpenidModuleSetup
      */
     public function accessLevelCheck()
     {
-        $setupConfig = $this->getBackendUser()->getTSConfigProp('setup.fields');
+        $setupConfig = $this->getBackendUser()->getTSConfig()['setup.']['fields.'];
         return empty($setupConfig['tx_openid_openid.']['disabled']);
     }
 
@@ -46,9 +46,10 @@ class OpenidModuleSetup
         $add = htmlspecialchars(
             $this->getLanguageService()->sL('LLL:EXT:openid/Resources/Private/Language/locallang.xlf:addopenid')
         );
-
+        
+        $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
         $parameters = ['P[itemName]' => 'data[be_users][tx_openid_openid]'];
-        $popUpUrl = GeneralUtility::quoteJSvalue(BackendUtility::getModuleUrl('wizard_openid', $parameters));
+        $popUpUrl = GeneralUtility::quoteJSvalue($uriBuilder->buildUriFromRoute('wizard_openid', $parameters));
         return '<div class="input-group">' .
             '<input id="field_tx_openid_openid"' .
             ' class="form-control"' .
