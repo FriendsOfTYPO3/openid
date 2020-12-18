@@ -14,10 +14,10 @@ namespace FoT3\Openid;
  * The TYPO3 project - inspiring people to share!
  */
 
-use TYPO3\CMS\Backend\Utility\BackendUtility;
+use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Lang\LanguageService;
+use TYPO3\CMS\Core\Localization\LanguageService;
 
 /**
  * This class is the OpenID return script for the TYPO3 Backend (used in the user-settings module).
@@ -31,7 +31,7 @@ class OpenidModuleSetup
      */
     public function accessLevelCheck()
     {
-        $setupConfig = $this->getBackendUser()->getTSConfigProp('setup.fields');
+        $setupConfig = $this->getBackendUser()->getTSConfig()['setup.']['fields.'];
         return empty($setupConfig['tx_openid_openid.']['disabled']);
     }
 
@@ -47,8 +47,9 @@ class OpenidModuleSetup
             $this->getLanguageService()->sL('LLL:EXT:openid/Resources/Private/Language/locallang.xlf:addopenid')
         );
 
+        $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
         $parameters = ['P[itemName]' => 'data[be_users][tx_openid_openid]'];
-        $popUpUrl = GeneralUtility::quoteJSvalue(BackendUtility::getModuleUrl('wizard_openid', $parameters));
+        $popUpUrl = GeneralUtility::quoteJSvalue($uriBuilder->buildUriFromRoute('wizard_openid', $parameters));
         return '<div class="input-group">' .
             '<input id="field_tx_openid_openid"' .
             ' class="form-control"' .
@@ -74,7 +75,7 @@ class OpenidModuleSetup
     }
 
     /**
-     * @return LanguageService
+     * @return LanguageService|\TYPO3\CMS\Lang\LanguageService
      */
     protected function getLanguageService()
     {
