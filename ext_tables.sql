@@ -42,6 +42,6 @@ CREATE TABLE tx_openid_nonce_store (
 	salt char(40) DEFAULT '' NOT NULL,
 
 	PRIMARY KEY (uid),
-	UNIQUE KEY nonce (server_url(255),tstamp,salt),
+	UNIQUE KEY nonce (server_url(191),tstamp,salt),
 	KEY crdate (crdate)
 ) ENGINE=InnoDB;
