@@ -91,21 +91,18 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
      */
     public function init()
     {
-        // this line needs to stay for TYPO3 v8 compatibility
-        $this->setLogger(GeneralUtility::makeInstance(LogManager::class)->getLogger(__CLASS__));
-
         $available = false;
         if (extension_loaded('gmp')) {
             $available = is_callable('gmp_init');
         } elseif (extension_loaded('bcmath')) {
             $available = is_callable('bcadd');
         } else {
-            $this->writeLog('Neither bcmath, nor gmp PHP extension found. OpenID authentication will not be available.');
+            $this->logger->warning('Neither bcmath, nor gmp PHP extension found. OpenID authentication will not be available.');
         }
         // We also need set_include_path() PHP function
         if (!is_callable('set_include_path')) {
             $available = false;
-            $this->writeLog('set_include_path() PHP function is not available. OpenID authentication is disabled.');
+            $this->logger->warning('set_include_path() PHP function is not available. OpenID authentication is disabled.');
         }
         return $available ? parent::init() : false;
     }
@@ -157,8 +154,14 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
                     $loginData['uident_openid'] = $this->normalizeOpenID($loginData['uname']);
                     $isProcessed = true;
                 }
-            } catch (Exception $e) {
-                $this->writeLog($e->getMessage());
+            } catch (\Exception $exception) {
+                $this->logger->error(
+                    sprintf('[%d] "%s" %s',
+                        $exception->getCode(),
+                        $exception->getMessage(),
+                        $exception->getTraceAsString()
+                    )
+                );
             }
         }
         return $isProcessed;
@@ -194,9 +197,15 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
                         // we must change the password in the record to a long random string so
                         // that this user cannot be authenticated with other service.
                         $userRecord[$this->authenticationInformation['db_user']['userident_column']] = GeneralUtility::makeInstance(Random::class)->generateRandomHexString(42);
-                        $this->writeLog('User \'%s\' logged in with OpenID \'%s\'', $userRecord[$this->parentObject->formfield_uname], $openIDIdentifier);
+                        $this->logger->debug(
+                            sprintf(
+                                'User \'%s\' logged in with OpenID \'%s\'',
+                                $userRecord[$this->parentObject->formfield_uname],
+                                $openIDIdentifier
+                            )
+                        );
                     } else {
-                        $this->writeLog('Failed to login user using OpenID \'%s\'', $openIDIdentifier);
+                        $this->logger->debug(sprintf('Failed to login user using OpenID \'%s\'', $openIDIdentifier));
                     }
                 }
             }
@@ -226,7 +235,7 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
                     // Success (code 200)
                     $result = 200;
                 } else {
-                    $this->writeLog('OpenID authentication failed with code \'%s\'.', $this->openIDResponse->status);
+                    $this->logger->warning(sprintf('OpenID authentication failed with code \'%s\'.', $this->openIDResponse->status));
                 }
             }
         }
@@ -276,7 +285,7 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
             // Yadis requires session but session is not initialized when
             // processing Backend authentication
             @session_start();
-            $this->writeLog('Session is initialized');
+            $this->logger->debug('Session is initialized');
         }
     }
 
@@ -316,10 +325,16 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
                 // Make sure to work only with normalized OpenID during the whole process
                 $record['tx_openid_openid'] = $this->normalizeOpenID($record['tx_openid_openid']);
             }
-        } catch (Exception $e) {
+        } catch (\Exception $exception) {
             // This should never happen and generally means hack attempt.
             // We just log it and do not return any records.
-            $this->writeLog($e->getMessage());
+            $this->logger->error(
+                sprintf('[%d] "%s" %s',
+                    $exception->getCode(),
+                    $exception->getMessage(),
+                    $exception->getTraceAsString()
+                )
+            );
         }
 
         // Hook to modify the user record, e.g. to register a new user
@@ -376,7 +391,7 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
         if (!$authenticationRequest) {
             // Not a valid OpenID. Since it can be some other ID, we just return
             // and let other service handle it.
-            $this->writeLog('Could not create authentication request for OpenID identifier \'%s\'', $openIDIdentifier);
+            $this->logger->warning(sprintf('Could not create authentication request for OpenID identifier \'%s\'', $openIDIdentifier));
             return;
         }
 
@@ -402,7 +417,7 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
             $redirectURL = $authenticationRequest->redirectURL($trustedRoot, $returnURL);
             // If the redirect URL can't be built, return. We can only return.
             if (\Auth_OpenID::isFailure($redirectURL)) {
-                $this->writeLog('Authentication request could not create redirect URL for OpenID identifier \'%s\'', $openIDIdentifier);
+                $this->logger->warning(sprintf('Authentication request could not create redirect URL for OpenID identifier \'%s\'', $openIDIdentifier));
                 return;
             }
             // Send redirect. We use 303 code because it allows to redirect POST
@@ -416,7 +431,7 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
             // otherwise, render the HTML.
             if (\Auth_OpenID::isFailure($formHtml)) {
                 // Form markup cannot be generated
-                $this->writeLog('Could not create form markup for OpenID identifier \'%s\'', $openIDIdentifier);
+                $this->logger->warning(sprintf('Could not create form markup for OpenID identifier \'%s\'', $openIDIdentifier));
                 return;
             } else {
                 @ob_end_clean();
@@ -574,40 +589,5 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
             $result = '';
         }
         return $result;
-    }
-
-    /**
-     * Writes log message. Destination log depends on the current system mode.
-     * For FE the function writes to the admin panel log. For BE messages are
-     * sent to the system log. If developer log is enabled, messages are also
-     * sent there.
-     *
-     * This function accepts variable number of arguments and can format
-     * parameters. The syntax is the same as for sprintf()
-     *
-     * @param string $message Message to output
-     * @return void
-     * @see GeneralUtility::sysLog()
-     */
-    protected function writeLog($message)
-    {
-        if (func_num_args() > 1) {
-            $params = func_get_args();
-            array_shift($params);
-            $message = vsprintf($message, $params);
-        }
-
-        $this->logger->notice($message);
-
-        if (version_compare(TYPO3_branch, '8.7', '>')) {
-            return;
-        }
-
-        if (defined('TYPO3_MODE') && TYPO3_MODE === 'BE') {
-            GeneralUtility::sysLog($message, $this->extKey, GeneralUtility::SYSLOG_SEVERITY_NOTICE);
-        }
-        if (!empty($GLOBALS['TYPO3_CONF_VARS']['SYS']['enable_DLOG'])) {
-            GeneralUtility::devLog($message, $this->extKey, GeneralUtility::SYSLOG_SEVERITY_NOTICE);
-        }
     }
 }
