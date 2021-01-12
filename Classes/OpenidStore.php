@@ -14,6 +14,7 @@ namespace FoT3\Openid;
  * The TYPO3 project - inspiring people to share!
  */
 
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
@@ -198,8 +199,12 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
             ];
             /** @var Connection $connection */
             $connection = GeneralUtility::makeInstance(ConnectionPool::class)->getConnectionForTable(self::NONCE_TABLE_NAME);
-            $affectedRows = $connection->createQueryBuilder()->insert(self::NONCE_TABLE_NAME)->values($values)->execute();
-            $result = $affectedRows > 0;
+            try {
+                $affectedRows = $connection->createQueryBuilder()->insert(self::NONCE_TABLE_NAME)->values($values)->execute();
+                $result = $affectedRows > 0;
+            } catch (UniqueConstraintViolationException $exception) {
+                // Nothing, nonce is used already
+            }
         }
         return $result;
     }
