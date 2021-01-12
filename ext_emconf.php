@@ -8,15 +8,15 @@ $EM_CONF[$_EXTKEY] = [
     'uploadfolder' => false,
     'createDirs' => '',
     'clearCacheOnLoad' => false,
-    'version' => '10.1.0',
+    'version' => '11.0.0',
     'constraints' => [
-        'depends' => [
-            'typo3' => '9.5.0-10.999.999',
-            'setup' => '9.5.0-10.999.999',
+        'depends' =>[
+            'typo3' => '9.5.0-11.999.999',
+            'setup' => '9.5.0-11.999.999',
         ],
         'conflicts' => [
             'naw_openid' => '',
-            'naw_openid_be' => ''
+            'naw_openid_be' => '',
         ],
         'suggests' => [],
     ],
