@@ -104,6 +104,13 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
             $available = false;
             $this->logger->warning('set_include_path() PHP function is not available. OpenID authentication is disabled.');
         }
+
+        // Check that we can actually authenticate
+        if ($GLOBALS['TYPO3_CONF_VARS']['BE']['cookieSameSite'] !== 'lax') {
+            $available = false;
+            $this->logger->alert('You need to set $GLOBALS[\'TYPO3_CONF_VARS\'][\'BE\'][\'cookieSameSite\'] to \'lax\' to use EXT:openid.');
+        }
+
         return $available ? parent::init() : false;
     }
 
