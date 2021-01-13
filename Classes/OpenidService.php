@@ -106,7 +106,7 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
         }
 
         // Check that we can actually authenticate
-        if ($GLOBALS['TYPO3_CONF_VARS']['BE']['cookieSameSite'] !== 'lax') {
+        if (TYPO3_MODE === 'BE' && $GLOBALS['TYPO3_CONF_VARS']['BE']['cookieSameSite'] !== 'lax') {
             $available = false;
             $this->logger->alert('You need to set $GLOBALS[\'TYPO3_CONF_VARS\'][\'BE\'][\'cookieSameSite\'] to \'lax\' to use EXT:openid.');
         }
