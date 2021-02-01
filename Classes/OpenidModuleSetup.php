@@ -31,8 +31,8 @@ class OpenidModuleSetup
      */
     public function accessLevelCheck()
     {
-        $setupConfig = $this->getBackendUser()->getTSConfig()['setup.']['fields.'];
-        return empty($setupConfig['tx_openid_openid.']['disabled']);
+        $setupConfig = $this->getBackendUser()->getTSConfig();
+        return empty($setupConfig['setup.']['fields.']['tx_openid_openid.']['disabled']);
     }
 
     /**
