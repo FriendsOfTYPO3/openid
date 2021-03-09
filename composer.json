@@ -27,5 +27,10 @@
 		"psr-4": {
 			"FoT3\\Openid\\": "Classes/"
 		}
+	},
+	"extra": {
+		"typo3/cms": {
+			"extension-key": "openid"
+		}
 	}
 }
