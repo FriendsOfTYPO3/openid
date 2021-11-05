@@ -245,10 +245,14 @@ class Auth_Yadis_dom extends Auth_Yadis_XMLParser {
         // libxml_disable_entity_loader (PHP 5 >= 5.2.11)
         if (function_exists('libxml_disable_entity_loader') && function_exists('libxml_use_internal_errors')) {
             // disable external entities and libxml errors
-            $loader = libxml_disable_entity_loader(true);
+            if (version_compare(phpversion(), '8.0.0', '<')) {
+                $loader = libxml_disable_entity_loader(true);
+            }
             $errors = libxml_use_internal_errors(true);
             $parse_result = @$this->doc->loadXML($xml_string);
-            libxml_disable_entity_loader($loader);
+            if (version_compare(phpversion(), '8.0.0', '<')) {
+                libxml_disable_entity_loader($loader);
+            }
             libxml_use_internal_errors($errors);
         } else {
             $parse_result = @$this->doc->loadXML($xml_string);

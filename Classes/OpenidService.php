@@ -288,7 +288,7 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
         require_once $phpOpenIDLibPath . '/Auth/OpenID/Consumer.php';
         // Restore path
         @set_include_path($oldIncludePath);
-        if (!is_array($_SESSION)) {
+        if (!isset($_SESSION)) {
             // Yadis requires session but session is not initialized when
             // processing Backend authentication
             @session_start();
