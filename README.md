@@ -1,22 +1,17 @@
-# OpenID support for TYPO3 CMS
+[![Latest Stable Version](https://poser.pugx.org/friendsoftypo3/openid/v/stable.svg)](https://extensions.typo3.org/extension/openid/)
+[![TYPO3](https://img.shields.io/badge/TYPO3-11-orange.svg?style=flat-square)](https://get.typo3.org/version/11)
+[![TYPO3](https://img.shields.io/badge/TYPO3-10-orange.svg?style=flat-square)](https://get.typo3.org/version/10)
+[![TYPO3](https://img.shields.io/badge/TYPO3-9-orange.svg?style=flat-square)](https://get.typo3.org/version/9)
+[![Total Downloads](https://poser.pugx.org/friendsoftypo3/openid/d/total.svg)](https://packagist.org/packages/friendsoftypo3/openid)
+[![Monthly Downloads](https://poser.pugx.org/friendsoftypo3/openid/d/monthly)](https://packagist.org/packages/friendsoftypo3/openid)
 
-This extension provides OpenID support for TYPO3 CMS. It is licensed under the same license as the TYPO3 CMS.
+# TYPO3 extension `openid`
 
-## Support
+This extension provides OpenID authentication for the TYPO3 frontend and
+backend, which facilitates SSO across multiple websites.
 
-Documentation is available [here](https://docs.typo3.org/p/friendsoftypo3/openid/8.1/en-us).
-
-If you suspect there is a bug, feel free to add the issue to the [issue tracker](https://github.com/FriendsOfTYPO3/openid/issues) on GitHub.
-
-## Troubleshooting
-
-### Login fails since TYPO3 8.7.31 and 9.5.14
-
-These versions of TYPO3 [introduced](https://typo3.org/article/typo3-9514-and-8731-maintenance-releases-published) a SameSite cookies support, which broke OpenID authentication. The fix is to make sure that you have the following in your `web/typo3conf/LocalConfiguration.php`:
-
-```php
-return [
-    'BE' => [
-        'cookieSameSite' => 'lax',
-        ...
-```
+|                  | URL                                                        |
+|------------------|------------------------------------------------------------|
+| **Repository:**  | https://github.com/FriendsOfTYPO3/openid                   |
+| **Read online:** | https://docs.typo3.org/p/friendsoftypo3/openid/main/en-us/ |
+| **TER:**         | https://extensions.typo3.org/extension/openid              |
