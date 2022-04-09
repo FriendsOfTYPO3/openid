@@ -1,7 +1,7 @@
 [![Latest Stable Version](https://poser.pugx.org/friendsoftypo3/openid/v/stable.svg)](https://extensions.typo3.org/extension/openid/)
-[![TYPO3](https://img.shields.io/badge/TYPO3-11-orange.svg?style=flat-square)](https://get.typo3.org/version/11)
-[![TYPO3](https://img.shields.io/badge/TYPO3-10-orange.svg?style=flat-square)](https://get.typo3.org/version/10)
-[![TYPO3](https://img.shields.io/badge/TYPO3-9-orange.svg?style=flat-square)](https://get.typo3.org/version/9)
+[![TYPO3 11](https://img.shields.io/badge/TYPO3-11-orange.svg?style=flat-square)](https://get.typo3.org/version/11)
+[![TYPO3 10](https://img.shields.io/badge/TYPO3-10-orange.svg?style=flat-square)](https://get.typo3.org/version/10)
+[![TYPO3 9](https://img.shields.io/badge/TYPO3-9-orange.svg?style=flat-square)](https://get.typo3.org/version/9)
 [![Total Downloads](https://poser.pugx.org/friendsoftypo3/openid/d/total.svg)](https://packagist.org/packages/friendsoftypo3/openid)
 [![Monthly Downloads](https://poser.pugx.org/friendsoftypo3/openid/d/monthly)](https://packagist.org/packages/friendsoftypo3/openid)
 
