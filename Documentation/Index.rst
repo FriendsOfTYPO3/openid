@@ -1,63 +1,54 @@
-.. ==================================================
-.. FOR YOUR INFORMATION
-.. --------------------------------------------------
-.. -*- coding: utf-8 -*- with BOM.
-
-.. include:: Includes.txt
-
-
-.. _start:
+.. include:: /Includes.rst.txt
 
 =====================
 OpenID Authentication
 =====================
 
 :Extension key:
-      openid
+   openid
+
+:Package name:
+   friendsoftypo3/openid
 
 :Version:
-      |release|
+   |release|
 
 :Language:
-      en
-
-:Description:
-      Authentication using OpenID services.
-
-:Keywords:
-      openid, authentication
-
-:Copyright:
-      2000-2018
+   en
 
 :Author:
-      TYPO3 CMS Core Development Team
+   Dmitry Dulepov, Markus Klein & contributors
 
 :License:
-      Open Content License available from `www.opencontent.org/opl.shtml
-      <http://www.opencontent.org/opl.shtml>`_
+   This document is published under the
+   `Open Content License <https://www.openhub.net/licenses/opl>`__.
 
 :Rendered:
-      |today|
+   |today|
 
-The content of this document is related to TYPO3,
+----
 
-a GNU/GPL CMS/Framework available from `www.typo3.org
-<http://www.typo3.org/>`_
+This extension provides OpenID authentication for the TYPO3 frontend and
+backend, which facilitates SSO across multiple websites.
 
+----
 
-
-
-**Table of Contents**
+**Table of Contents:**
 
 .. toctree::
-   :maxdepth: 5
+   :maxdepth: 2
    :titlesonly:
-   :glob:
 
    Introduction/Index
    UsersManual/Index
    Administration/Index
    Configuration/Index
-   Targets
+   Troubleshooting/Index
 
+.. Meta Menu
+
+.. toctree::
+   :hidden:
+
+   Sitemap
+   genindex

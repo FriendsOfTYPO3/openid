@@ -4,7 +4,12 @@
 	"keywords": ["typo3","openid"],
 	"description": "OpenID authentication for TYPO3 CMS",
 	"license": ["GPL-2.0-or-later"],
-	"homepage": "https://github.com/FriendsOfTYPO3/openid",
+	"homepage": "https://extensions.typo3.org/extension/openid",
+	"support": {
+		"docs": "https://docs.typo3.org/p/friendsoftypo3/openid/main/en-us/",
+		"issues": "https://github.com/FriendsOfTYPO3/openid/issues",
+		"source": "https://github.com/FriendsOfTYPO3/openid"
+	},
 	"authors": [
 		{
 			"name": "Dmitry Dulepov",
