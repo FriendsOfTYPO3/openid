@@ -161,6 +161,7 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
                     $loginData['uident_openid'] = $this->normalizeOpenID($loginData['uname']);
                     $isProcessed = true;
                 }
+                $this->isValidOpenID($loginData['uident_openid']);
             } catch (\Exception $exception) {
                 $this->logger->error(
                     sprintf('[%d] "%s" %s',
@@ -217,7 +218,20 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
                 }
             }
         } elseif (!empty($this->loginData['uident_openid'])) {
-            $this->sendOpenIDRequest($this->loginData['uident_openid']);
+            try {
+                $this->isValidOpenID($this->loginData['uident_openid']);
+                $this->sendOpenIDRequest($this->loginData['uident_openid']);
+            } catch (Exception $exception) {
+                // This should never happen and generally means hack attempt.
+                // We just log it and do not return any records.
+                $this->logger->error(
+                    sprintf('[%d] "%s" %s',
+                        $exception->getCode(),
+                        $exception->getMessage(),
+                        $exception->getTraceAsString()
+                    )
+                );
+            }
         }
         return $userRecord;
     }
@@ -491,6 +505,35 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
     {
         return GeneralUtility::hmac($parameter, $this->extKey);
     }
+
+    /**
+     * Checks if openIDIdentifier belongs to any user in the system.
+     * Used to prevent a server side request forgery attack.
+     *
+     * @param string $openIDIdentifier OpenID identifier to check
+     * @return void
+     * @throws Exception
+     */
+    protected function isValidOpenID($openIDIdentifier)
+    {
+        /** @var QueryBuilder $queryBuilder */
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable($this->authenticationInformation['db_user']['table']);
+        $queryBuilder->getRestrictions()->removeAll();
+        $row = $queryBuilder
+            ->select('tx_openid_openid')
+            ->from($this->authenticationInformation['db_user']['table'])
+            ->where(
+                $queryBuilder->expr()->eq('tx_openid_openid',  $queryBuilder->createNamedParameter($openIDIdentifier))
+            )
+            ->execute()
+            ->fetch();
+
+        if (!is_array($row)) {
+            // This only happens when the OpenIdentifier not valid for the local system
+            throw new Exception('Trying to authenticate with OpenID but identifier is neither found in a user record.', 1662578993);
+        }
+    }
+
 
     /**
      * Implement normalization according to OpenID 2.0 specification
