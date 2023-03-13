@@ -45,3 +45,16 @@ CREATE TABLE tx_openid_nonce_store (
 	UNIQUE KEY nonce (server_url(191),tstamp,salt),
 	KEY crdate (crdate)
 ) ENGINE=InnoDB;
+
+#
+# Table structure for table 'tx_openid_token'.
+#
+CREATE TABLE tx_openid_token (
+	uid int(11) unsigned NOT NULL auto_increment,
+	pid int(11) unsigned DEFAULT '0' NOT NULL,
+	crdate int(11) unsigned DEFAULT '0' NOT NULL,
+	token_id varchar(255) DEFAULT '' NOT NULL,
+	token text,
+
+	PRIMARY KEY (uid),
+) ENGINE=InnoDB;

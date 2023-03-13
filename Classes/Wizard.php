@@ -1,4 +1,5 @@
 <?php
+
 namespace FoT3\Openid;
 
 /*
@@ -14,8 +15,8 @@ namespace FoT3\Openid;
  * The TYPO3 project - inspiring people to share!
  */
 
-use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageRendererResolver;
@@ -115,8 +116,6 @@ class Wizard extends OpenidService
 
     /**
      * Check OpenID response and set flash messages depending on its state
-     *
-     * @return void
      */
     protected function handleResponse()
     {

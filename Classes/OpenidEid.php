@@ -1,4 +1,5 @@
 <?php
+
 namespace FoT3\Openid;
 
 /*
@@ -29,7 +30,7 @@ class OpenidEid
      *
      * @param ServerRequestInterface $request
      * @param ResponseInterface $response
-     * @return null|ResponseInterface
+     * @return ResponseInterface|null
      */
     public function processRequest(ServerRequestInterface $request, ResponseInterface $response)
     {

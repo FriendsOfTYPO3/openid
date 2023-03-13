@@ -1,0 +1,6 @@
+services:
+  FoT3\Openid\Event\RestoreRequestToken:
+    tags:
+      - name: event.listener
+        identifier: 'OpenIdRestoreRequestToken'
+        event: TYPO3\CMS\Core\Authentication\Event\BeforeRequestTokenProcessedEvent

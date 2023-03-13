@@ -1,4 +1,5 @@
 <?php
+
 namespace FoT3\Openid\LoginProvider;
 
 /*
@@ -22,8 +23,6 @@ use TYPO3\CMS\Fluid\View\StandaloneView;
 
 /**
  * Class OpenIdLoginProvider
- *
- * @package FoT3\Openid\LoginProvider
  */
 class OpenIdLoginProvider implements LoginProviderInterface
 {

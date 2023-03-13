@@ -26,9 +26,6 @@ $Auth_OpenID_SKEW = 60 * 60 * 5;
 define('Auth_OpenID_Nonce_REGEX',
        '/(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d)Z(.*)/');
 
-define('Auth_OpenID_Nonce_TIME_FMT',
-       '%Y-%m-%dT%H:%M:%SZ');
-
 function Auth_OpenID_splitNonce($nonce_string)
 {
     // Extract a timestamp from the given nonce string
@@ -102,7 +99,7 @@ function Auth_OpenID_mkNonce($when = null)
         // that.
         $when = time();
     }
-    $time_str = gmstrftime(Auth_OpenID_Nonce_TIME_FMT, $when);
+    $time_str = date('c', $when);
     return $time_str . $salt;
 }
 

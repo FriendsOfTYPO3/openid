@@ -1,4 +1,5 @@
 <?php
+
 namespace FoT3\Openid;
 
 /*
@@ -14,18 +15,20 @@ namespace FoT3\Openid;
  * The TYPO3 project - inspiring people to share!
  */
 
+use Doctrine\DBAL\ArrayParameterType;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
+use TYPO3\CMS\Core\Authentication\AbstractUserAuthentication;
+use TYPO3\CMS\Core\Authentication\AuthenticationService;
+use TYPO3\CMS\Core\Context\Context;
+use TYPO3\CMS\Core\Context\SecurityAspect;
+use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Crypto\Random;
-use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
-use TYPO3\CMS\Core\Log\LogManager;
-use TYPO3\CMS\Core\Service\AbstractService;
 use TYPO3\CMS\Core\SingletonInterface;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Core\Authentication\AbstractUserAuthentication;
 use TYPO3\CMS\Core\Utility\HttpUtility;
 
 require_once ExtensionManagementUtility::extPath('openid') . 'lib/php-openid/Auth/OpenID/Interface.php';
@@ -33,23 +36,16 @@ require_once ExtensionManagementUtility::extPath('openid') . 'lib/php-openid/Aut
 /**
  * Service "OpenID Authentication" for the "openid" extension.
  */
-class OpenidService extends AbstractService implements LoggerAwareInterface, SingletonInterface
+class OpenidService extends AuthenticationService implements LoggerAwareInterface, SingletonInterface
 {
     use LoggerAwareTrait;
-
-    /**
-     * The extension key
-     *
-     * @var string
-     */
-    public $extKey = 'openid';
 
     /**
      * Login data as passed to initAuth()
      *
      * @var array
      */
-    protected $loginData = [];
+    protected array $loginData = [];
 
     /**
      * Additional authentication information provided by AbstractUserAuthentication.
@@ -57,29 +53,29 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
      *
      * @var array
      */
-    protected $authenticationInformation = [];
+    protected array $authenticationInformation = [];
 
     /**
      * OpenID response object. It is initialized when OpenID provider returns
      * with success/failure response to us.
      *
-     * @var \Auth_OpenID_ConsumerResponse
+     * @var ?\Auth_OpenID_ConsumerResponse
      */
-    protected $openIDResponse = null;
+    protected \Auth_OpenID_ConsumerResponse|null $openIDResponse = null;
 
     /**
      * A reference to the calling object
      *
      * @var AbstractUserAuthentication
      */
-    protected $parentObject;
+    protected AbstractUserAuthentication $parentObject;
 
     /**
      * If set to TRUE, than libraries are already included.
      *
      * @var bool
      */
-    protected static $openIDLibrariesIncluded = false;
+    protected static bool $openIDLibrariesIncluded = false;
 
     /**
      * Checks if service is available,. In case of this service we check that
@@ -89,7 +85,7 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
      *
      * @return bool TRUE if service is available
      */
-    public function init()
+    public function init(): bool
     {
         $available = false;
         if (extension_loaded('gmp')) {
@@ -106,35 +102,34 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
         }
 
         // Check that we can actually authenticate
-        if (TYPO3_MODE === 'BE' && $GLOBALS['TYPO3_CONF_VARS']['BE']['cookieSameSite'] !== 'lax') {
+        if (str_ends_with($this->info['requestedServiceSubType'], 'BE') && $GLOBALS['TYPO3_CONF_VARS']['BE']['cookieSameSite'] !== 'lax') {
             $available = false;
             $this->logger->alert('You need to set $GLOBALS[\'TYPO3_CONF_VARS\'][\'BE\'][\'cookieSameSite\'] to \'lax\' to use EXT:openid.');
         }
 
-        return $available ? parent::init() : false;
+        return $available && parent::init();
     }
 
     /**
      * Initializes authentication for this service.
      *
-     * @param string $subType: Subtype for authentication (either "getUserFE" or "getUserBE")
+     * @param string $mode: Subtype for authentication (either "getUserFE" or "getUserBE")
      * @param array $loginData: Login data submitted by user and preprocessed by AbstractUserAuthentication
      * @param array $authenticationInformation: Additional TYPO3 information for authentication services (unused here)
      * @param AbstractUserAuthentication $parentObject Calling object
-     * @return void
      */
-    public function initAuth($subType, array $loginData, array $authenticationInformation, AbstractUserAuthentication &$parentObject)
+    public function initAuth($mode, $loginData, $authenticationInformation, $parentObject): void
     {
-        // Store login and authentication data
-        $this->loginData = $loginData;
         $this->authenticationInformation = $authenticationInformation;
+        $this->loginData = $loginData;
+        $this->parentObject = $parentObject;
+
         // If we are here after authentication by the OpenID server, get its response.
-        if (GeneralUtility::_GP('tx_openid_mode') === 'finish' && $this->openIDResponse === null) {
+        if (($_GET['tx_openid_mode'] ?? '') === 'finish' && $this->openIDResponse === null) {
             $this->includePHPOpenIDLibrary();
             $openIDConsumer = $this->getOpenIDConsumer();
-            $this->openIDResponse = $openIDConsumer->complete($this->getReturnURL(GeneralUtility::_GP('tx_openid_claimed')));
+            $this->openIDResponse = $openIDConsumer->complete($this->getReturnURL($_GET['tx_openid_claimed']));
         }
-        $this->parentObject = $parentObject;
     }
 
     /**
@@ -142,28 +137,34 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
      *
      * @param array $loginData Credentials that are submitted and potentially modified by other services
      * @param string $passwordTransmissionStrategy Keyword of how the password has been hashed or encrypted before submission
-     * @return bool
+     * @return int
      */
     public function processLoginData(array &$loginData, $passwordTransmissionStrategy)
     {
-        $isProcessed = false;
-        // Pre-process the login only if no password has been submitted
-        if (empty($loginData['uident_text'])) {
+        $isProcessed = 0;
+        if ($this->openIDResponse) {
+            if ($this->openIDResponse instanceof \Auth_OpenID_ConsumerResponse &&
+                $this->openIDResponse->status === Auth_OpenID_SUCCESS
+            ) {
+                $isProcessed = is_array($this->getUserRecord($this->getFinalOpenIDIdentifier())) ? 200 : 0;
+            }
+        } elseif (empty($loginData['uident_text'])) {
             try {
-                $openIdUrl = GeneralUtility::_POST('openid_url');
+                $openIdUrl = $_POST['openid_url'] ?? '';
                 if (!empty($openIdUrl)) {
                     $loginData['uident_openid'] = $this->normalizeOpenID($openIdUrl);
-                    $isProcessed = true;
+                    $isProcessed = is_array($this->getUserRecord($loginData['uident_openid'])) ? 200 : 0;
                 } elseif (!empty($loginData['uname'])) {
                     // It might be the case that during frontend login the OpenID URL is submitted in the username field
                     // Since we are a low priority service, and no password has been submitted it is OK to just assume
                     // we might have gotten an OpenID URL
                     $loginData['uident_openid'] = $this->normalizeOpenID($loginData['uname']);
-                    $isProcessed = true;
+                    $isProcessed = is_array($this->getUserRecord($loginData['uident_openid'])) ? 200 : 0;
                 }
             } catch (\Exception $exception) {
                 $this->logger->error(
-                    sprintf('[%d] "%s" %s',
+                    sprintf(
+                        '[%d] "%s" %s',
                         $exception->getCode(),
                         $exception->getMessage(),
                         $exception->getTraceAsString()
@@ -171,6 +172,11 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
                 );
             }
         }
+        // Fill in other fields because TYPO3 checks them even though they are not needed for us and not submitted
+        $loginData = array_map(function ($value) {
+            return $value ?? '';
+        }, $loginData);
+
         return $isProcessed;
     }
 
@@ -228,7 +234,7 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
      * @param array $userRecord User record
      * @return int Code that shows if user is really authenticated.
      */
-    public function authUser(array $userRecord)
+    public function authUser(array $userRecord): int
     {
         $result = 100;
         // 100 means "we do not know, continue"
@@ -242,6 +248,8 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
                     // Success (code 200)
                     $result = 200;
                 } else {
+                    // It was OpenID but it failed, do not continue with outher services
+                    $result = -1;
                     $this->logger->warning(sprintf('OpenID authentication failed with code \'%s\'.', $this->openIDResponse->status));
                 }
             }
@@ -251,10 +259,8 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
 
     /**
      * Includes necessary files for the PHP OpenID library
-     *
-     * @return void
      */
-    protected function includePHPOpenIDLibrary()
+    protected function includePHPOpenIDLibrary(): void
     {
         if (self::$openIDLibrariesIncluded) {
             return;
@@ -268,12 +274,7 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
         // Make sure that random generator is properly set up. Constant could be
         // defined by the previous inclusion of the file
         if (!defined('Auth_OpenID_RAND_SOURCE')) {
-            if (class_exists(\TYPO3\CMS\Core\Core\Environment::class)) {
-                $isWindows = \TYPO3\CMS\Core\Core\Environment::isWindows();
-            } else {
-                $isWindows = defined('TYPO3_OS' ) && TYPO3_OS === 'WIN';
-            }
-            if ($isWindows) {
+            if (Environment::isWindows()) {
                 // No random generator on Windows!
                 define('Auth_OpenID_RAND_SOURCE', null);
             } elseif (!is_readable('/dev/urandom')) {
@@ -300,9 +301,9 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
      * Gets user record for the user with the OpenID provided by the user
      *
      * @param string $openIDIdentifier OpenID identifier to search for
-     * @return array Database fields from the table that corresponds to the current login mode (FE/BE)
+     * @return ?array Database fields from the table that corresponds to the current login mode (FE/BE)
      */
-    protected function getUserRecord($openIDIdentifier)
+    protected function getUserRecord(string $openIDIdentifier): ?array
     {
         $record = null;
         try {
@@ -320,14 +321,14 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
                         'tx_openid_openid',
                         $queryBuilder->createNamedParameter(
                             [$openIDIdentifier, rtrim($openIDIdentifier, '/')],
-                            Connection::PARAM_STR_ARRAY
+                            ArrayParameterType::STRING
                         )
                     ),
-                    $this->authenticationInformation['db_user']['check_pid_clause'],
+                    $this->authenticationInformation['db_user']['check_pid_clause'] ?? '',
                     $this->authenticationInformation['db_user']['enable_clause']
                 )
-                ->execute()
-                ->fetch();
+                ->executeQuery()
+                ->fetchAssociative();
             if ($record) {
                 // Make sure to work only with normalized OpenID during the whole process
                 $record['tx_openid_openid'] = $this->normalizeOpenID($record['tx_openid_openid']);
@@ -336,7 +337,8 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
             // This should never happen and generally means hack attempt.
             // We just log it and do not return any records.
             $this->logger->error(
-                sprintf('[%d] "%s" %s',
+                sprintf(
+                    '[%d] "%s" %s',
                     $exception->getCode(),
                     $exception->getMessage(),
                     $exception->getTraceAsString()
@@ -356,7 +358,7 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
             }
         }
 
-        return $record;
+        return is_array($record) ? $record : null;
     }
 
     /**
@@ -365,7 +367,7 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
      *
      * @return \Auth_OpenID_Consumer Consumer instance
      */
-    protected function getOpenIDConsumer()
+    protected function getOpenIDConsumer(): \Auth_OpenID_Consumer
     {
         /* @var $openIDStore OpenidStore */
         $openIDStore = GeneralUtility::makeInstance(OpenidStore::class);
@@ -386,9 +388,8 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
      * went totally wrong with OpenID.
      *
      * @param string $openIDIdentifier The OpenID identifier for discovery and auth request
-     * @return void
      */
-    protected function sendOpenIDRequest($openIDIdentifier)
+    protected function sendOpenIDRequest(string $openIDIdentifier): void
     {
         $this->includePHPOpenIDLibrary();
         // Initialize OpenID client system, get the consumer
@@ -418,7 +419,7 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
         // response.
         // For OpenID version 1, we *should* send a redirect. For OpenID version 2,
         // we should use a Javascript form to send a POST request to the server.
-        $returnURL = $this->getReturnURL($openIDIdentifier);
+        $returnURL = $this->getReturnURL($openIDIdentifier, true);
         $trustedRoot = GeneralUtility::getIndpEnv('TYPO3_SITE_URL');
         if ($authenticationRequest->shouldSendRedirect()) {
             $redirectURL = $authenticationRequest->redirectURL($trustedRoot, $returnURL);
@@ -431,19 +432,19 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
             // requests without resending the form. This is exactly what we need here.
             // See http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.3.4
             @ob_end_clean();
-            HttpUtility::redirect($redirectURL, HttpUtility::HTTP_STATUS_303);
+            header(HttpUtility::HTTP_STATUS_303);
+            header('Location: ' . $redirectURL);
         } else {
-            $formHtml = $authenticationRequest->htmlMarkup($trustedRoot, $returnURL, false, ['id' => 'openid_message']);
+            $formHtml = $authenticationRequest->htmlMarkup($trustedRoot, $returnURL/*, false, ['id' => 'openid_message']*/);
             // Display an error if the form markup couldn't be generated;
             // otherwise, render the HTML.
             if (\Auth_OpenID::isFailure($formHtml)) {
                 // Form markup cannot be generated
                 $this->logger->warning(sprintf('Could not create form markup for OpenID identifier \'%s\'', $openIDIdentifier));
                 return;
-            } else {
-                @ob_end_clean();
-                echo $formHtml;
             }
+            @ob_end_clean();
+            echo $formHtml;
         }
         // If we reached this point, we must not return!
         die;
@@ -455,9 +456,10 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
      * authentication process with the current site. We send it to our script.
      *
      * @param string $claimedIdentifier The OpenID identifier for discovery and auth request
+     * @param bool $storeRequestToken
      * @return string Return URL
      */
-    protected function getReturnURL($claimedIdentifier)
+    protected function getReturnURL(string $claimedIdentifier, bool $storeRequestToken = false): string
     {
         if ($this->authenticationInformation['loginType'] === 'FE') {
             // We will use eID to send user back, create session data and
@@ -472,12 +474,23 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
             // It is essential for BE user authentication.
             $returnURL = GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . TYPO3_mainDir . 'index.php?login_status=login';
         }
-        if (GeneralUtility::_GP('tx_openid_mode') === 'finish') {
-            $requestURL = GeneralUtility::_GP('tx_openid_location');
+        if (($_GET['tx_openid_mode'] ?? '') === 'finish') {
+            $requestURL = $_GET['tx_openid_location'];
         } else {
             $requestURL = GeneralUtility::getIndpEnv('TYPO3_REQUEST_URL');
         }
-        $returnURL .= '&tx_openid_location=' . rawurlencode($requestURL) . '&tx_openid_location_signature=' . $this->getSignature($requestURL) . '&tx_openid_mode=finish&tx_openid_claimed=' . rawurlencode($claimedIdentifier) . '&tx_openid_signature=' . $this->getSignature($claimedIdentifier);
+
+        $returnURL .= '&tx_openid_claimed=' . rawurlencode($claimedIdentifier) .
+            '&tx_openid_location=' . rawurlencode($requestURL) .
+            '&tx_openid_location_signature=' . $this->getSignature($requestURL) .
+            '&tx_openid_mode=finish' .
+            '&tx_openid_signature=' . $this->getSignature($claimedIdentifier)
+        ;
+
+        if ($storeRequestToken) {
+            $returnURL .= '&tx_openid_token=' . $this->storeRequestToken();
+        }
+
         return GeneralUtility::locationHeaderUrl($returnURL);
     }
 
@@ -487,9 +500,9 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
      * @param string $parameter
      * @return string
      */
-    protected function getSignature($parameter)
+    protected function getSignature(string $parameter): string
     {
-        return GeneralUtility::hmac($parameter, $this->extKey);
+        return GeneralUtility::hmac($parameter, 'openid');
     }
 
     /**
@@ -500,13 +513,13 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
      * @return string Normalized OpenID identifier
      * @throws Exception
      */
-    protected function normalizeOpenID($openIDIdentifier)
+    protected function normalizeOpenID(string $openIDIdentifier): string
     {
         if (empty($openIDIdentifier)) {
             throw new Exception('Empty OpenID Identifier given.', 1381922460);
         }
         // Strip everything with and behind the fragment delimiter character "#"
-        if (strpos($openIDIdentifier, '#') !== false) {
+        if (str_contains($openIDIdentifier, '#')) {
             $openIDIdentifier = preg_replace('/#.*$/', '', $openIDIdentifier);
         }
         // A URI with a missing scheme is normalized to a http URI
@@ -525,11 +538,11 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
                             'https://' . $openIDIdentifier,
                             'https://' . $openIDIdentifier . '/'
                         ],
-                        Connection::PARAM_STR_ARRAY
+                        ArrayParameterType::STRING
                     ))
                 )
-                ->execute()
-                ->fetch();
+                ->executeQuery()
+                ->fetchAssociative();
 
             if (is_array($row)) {
                 $openIDIdentifier = $row['tx_openid_openid'];
@@ -553,7 +566,7 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
      *
      * @return string
      */
-    protected function getFinalOpenIDIdentifier()
+    protected function getFinalOpenIDIdentifier(): string
     {
         $result = $this->getSignedParameter('openid_claimed_id');
         if (!$result) {
@@ -570,11 +583,11 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
      *
      * @return string The signed OpenID, if signature did not match this is empty
      */
-    protected function getSignedClaimedOpenIDIdentifier()
+    protected function getSignedClaimedOpenIDIdentifier(): string
     {
-        $result = GeneralUtility::_GP('tx_openid_claimed');
+        $result = (string)$_GET['tx_openid_claimed'];
         $signature = $this->getSignature($result);
-        if ($signature !== GeneralUtility::_GP('tx_openid_signature')) {
+        if ($signature !== $_GET['tx_openid_signature']) {
             $result = '';
         }
         return $result;
@@ -587,14 +600,52 @@ class OpenidService extends AbstractService implements LoggerAwareInterface, Sin
      * @param string $parameterName Must start with 'openid_'
      * @return string
      */
-    protected function getSignedParameter($parameterName)
+    protected function getSignedParameter(string $parameterName): string
     {
-        $signedParametersList = GeneralUtility::_GP('openid_signed');
+        $signedParametersList = (string)$_GET['openid_signed'];
         if (GeneralUtility::inList($signedParametersList, substr($parameterName, 7))) {
-            $result = GeneralUtility::_GP($parameterName);
+            $result = $_GET[$parameterName] ?? '';
         } else {
             $result = '';
         }
         return $result;
+    }
+
+    /**
+     * Stores request token for future restoratio when OpenID server returns
+     * the response. This is secure because token id never visible to the
+     * end user: it only exist in communication between TYPO3 and OpenID server.
+     * See \FoT3\Openid\Event\RestoreRequestToken for more information.
+     *
+     * @return string
+     * @see \FoT3\Openid\Event\RestoreRequestToken
+     */
+    protected function storeRequestToken(): string
+    {
+        $context = GeneralUtility::makeInstance(Context::class);
+        $securityAspect = SecurityAspect::provideIn($context);
+        $requestToken = $securityAspect->getReceivedRequestToken();
+
+        $connection = GeneralUtility::makeInstance(ConnectionPool::class)->getConnectionForTable('tx_openid_token');
+
+        $queryBuilder = $connection->createQueryBuilder();
+        $queryBuilder->delete('tx_openid_token')
+            ->where(
+                $queryBuilder->expr()->lt('crdate', $queryBuilder->createNamedParameter(time() - 600))
+            )
+            ->executeStatement()
+        ;
+
+        $tokenId = GeneralUtility::makeInstance(Random::class)->generateRandomHexString(24);
+        $queryBuilder = $connection->createQueryBuilder();
+        $queryBuilder->insert('tx_openid_token')
+            ->values([
+                'crdate' => time(),
+                'token' => serialize($requestToken),
+                'token_id' => $tokenId,
+            ])
+            ->executeStatement()
+        ;
+        return $tokenId;
     }
 }

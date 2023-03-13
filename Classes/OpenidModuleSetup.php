@@ -1,4 +1,5 @@
 <?php
+
 namespace FoT3\Openid;
 
 /*
@@ -16,8 +17,8 @@ namespace FoT3\Openid;
 
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Localization\LanguageService;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
  * This class is the OpenID return script for the TYPO3 Backend (used in the user-settings module).

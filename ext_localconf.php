@@ -1,5 +1,4 @@
 <?php
-defined('TYPO3_MODE') || die();
 
 // Register OpenID processing service with TYPO3
 \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addService(
@@ -28,11 +27,11 @@ defined('TYPO3_MODE') || die();
     [
         'title' => 'OpenID Authentication',
         'description' => 'OpenID authentication service for Frontend and Backend',
-        'subtype' => 'getUserFE,authUserFE,getUserBE,authUserBE',
+        'subtype' => 'getUserFE,authUserFE,getUserBE,authUserBE,processLoginDataBE',
         'available' => true,
         'priority' => 75,
         // Must be higher than for \TYPO3\CMS\Sv\AuthenticationService (50) or \TYPO3\CMS\Sv\AuthenticationService will log failed login attempts
-        'quality' => 50,
+        'quality' => 60,
         'os' => '',
         'exec' => '',
         'className' => \FoT3\Openid\OpenidService::class
@@ -49,6 +48,6 @@ $GLOBALS['TYPO3_CONF_VARS']['BE']['showRefreshLoginPopup'] = 1;
 $GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['backend']['loginProviders'][1433416748] = [
     'provider' => \FoT3\Openid\LoginProvider\OpenIdLoginProvider::class,
     'sorting' => 25,
-    'icon-class' => 'fa-openid',
+    'iconIdentifier' => 'fa-openid',
     'label' => 'LLL:EXT:openid/Resources/Private/Language/locallang.xlf:login.link'
 ];

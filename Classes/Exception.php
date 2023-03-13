@@ -1,4 +1,5 @@
 <?php
+
 namespace FoT3\Openid;
 
 /*

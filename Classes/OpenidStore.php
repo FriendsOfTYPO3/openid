@@ -1,4 +1,5 @@
 <?php
+
 namespace FoT3\Openid;
 
 /*
@@ -40,7 +41,6 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
      *
      * @param string $serverUrl Server URL
      * @param \Auth_OpenID_Association $association OpenID association
-     * @return void
      */
     public function storeAssociation($serverUrl, $association)
     {
@@ -58,22 +58,20 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
                 $queryBuilder->expr()->eq('assoc_handle', $queryBuilder->createNamedParameter($association->handle)),
                 $queryBuilder->expr()->eq('expires', $queryBuilder->createNamedParameter(time(), \PDO::PARAM_INT))
             )
-            ->execute()
-            ->fetchColumn();
+            ->executeQuery()
+            ->fetchOne();
 
         if ($existingAssociations) {
             $queryBuilder
                 ->update(self::ASSOCIATION_TABLE_NAME)
-                ->values([
-                    'content' => base64_encode(serialize($association)),
-                    'tstamp' => time()
-                ])
+                ->set('content', $queryBuilder->quote(base64_encode(serialize($association))))
+                ->set('tstamp', time())
                 ->where(
                     $queryBuilder->expr()->eq('server_url', $queryBuilder->createNamedParameter($serverUrl)),
                     $queryBuilder->expr()->eq('assoc_handle', $queryBuilder->createNamedParameter($association->handle)),
                     $queryBuilder->expr()->eq('expires', $queryBuilder->createNamedParameter(time(), \PDO::PARAM_INT))
                 )
-                ->execute();
+                ->executeStatement();
         } else {
             // In the next query we can get race conditions. sha1_hash prevents many associations from being stored for one server
             $queryBuilder
@@ -86,7 +84,7 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
                     'expires' => $association->issued + $association->lifetime - self::ASSOCIATION_EXPIRATION_SAFETY_INTERVAL,
                     'server_url' => $serverUrl
                 ])
-                ->execute();
+                ->executeStatement();
         }
 
         $queryBuilder->getConnection()->commit();
@@ -102,7 +100,7 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
         /** @var QueryBuilder $queryBuilder */
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(self::ASSOCIATION_TABLE_NAME);
         $queryBuilder->getRestrictions()->removeAll();
-        return $queryBuilder->delete(self::ASSOCIATION_TABLE_NAME)->where('expires <= ' . time())->execute();
+        return $queryBuilder->delete(self::ASSOCIATION_TABLE_NAME)->where('expires <= ' . time())->executeStatement();
     }
 
     /**
@@ -127,7 +125,7 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
         } else {
             $queryBuilder->orderBy('tstamp', 'DESC');
         }
-        $row = $queryBuilder->execute()->fetch();
+        $row = $queryBuilder->executeQuery()->fetchAssociative();
         $result = null;
         if (is_array($row)) {
             $result = @unserialize(base64_decode($row['content']));
@@ -136,9 +134,9 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
             } else {
                 $queryBuilder
                     ->update(self::ASSOCIATION_TABLE_NAME)
-                    ->set('tstamp',time())
+                    ->set('tstamp', time())
                     ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($row['uid'], \PDO::PARAM_INT)))
-                    ->execute();
+                    ->executeStatement();
             }
         }
         return $result;
@@ -160,15 +158,13 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
             ->delete(self::ASSOCIATION_TABLE_NAME)->where(
                 $queryBuilder->expr()->eq('server_url', $queryBuilder->createNamedParameter($serverUrl)),
                 $queryBuilder->expr()->eq('assoc_handle', $queryBuilder->createNamedParameter($handle))
-            )->execute();
+            )->executeStatement();
 
         return $deletedCount > 0;
     }
 
     /**
      * Removes old nonces
-     *
-     * @return void
      */
     public function cleanupNonces()
     {
@@ -176,7 +172,7 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
         /** @var QueryBuilder $queryBuilder */
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable(self::NONCE_TABLE_NAME);
         $queryBuilder->getRestrictions()->removeAll();
-        $queryBuilder->delete(self::NONCE_TABLE_NAME)->where($where)->execute();
+        $queryBuilder->delete(self::NONCE_TABLE_NAME)->where($where)->executeStatement();
     }
 
     /**
@@ -200,7 +196,7 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
             /** @var Connection $connection */
             $connection = GeneralUtility::makeInstance(ConnectionPool::class)->getConnectionForTable(self::NONCE_TABLE_NAME);
             try {
-                $affectedRows = $connection->createQueryBuilder()->insert(self::NONCE_TABLE_NAME)->values($values)->execute();
+                $affectedRows = $connection->createQueryBuilder()->insert(self::NONCE_TABLE_NAME)->values($values)->executeStatement();
                 $result = $affectedRows > 0;
             } catch (UniqueConstraintViolationException $exception) {
                 // Nothing, nonce is used already
@@ -211,8 +207,6 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
 
     /**
      * Resets the store by removing all data in it
-     *
-     * @return void
      */
     public function reset()
     {
