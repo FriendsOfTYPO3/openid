@@ -13,7 +13,7 @@ Introduction
 What does it do?
 ^^^^^^^^^^^^^^^^
 
-This extension provides OpenID authentication for the Frontend and
+This extension provides OpenID authentication for the
 Backend. OpenID allows to authenticate on many web sites using a
 single registration at the OpenID provider. There are several OpenID
 providers on the Internet. Such major companies and sites as AOL,

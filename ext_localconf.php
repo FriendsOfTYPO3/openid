@@ -7,7 +7,7 @@
     'tx_openid_service_process',
     [
         'title' => 'OpenID Authentication',
-        'description' => 'OpenID processing login information service for Frontend and Backend',
+        'description' => 'OpenID processing login information service for Backend',
         'subtype' => 'processLoginDataBE,processLoginDataFE',
         'available' => true,
         'priority' => 35,
@@ -27,7 +27,7 @@
     [
         'title' => 'OpenID Authentication',
         'description' => 'OpenID authentication service for Frontend and Backend',
-        'subtype' => 'getUserFE,authUserFE,getUserBE,authUserBE,processLoginDataBE',
+        'subtype' => 'getUserBE,authUserBE,processLoginDataBE',
         'available' => true,
         'priority' => 75,
         // Must be higher than for \TYPO3\CMS\Sv\AuthenticationService (50) or \TYPO3\CMS\Sv\AuthenticationService will log failed login attempts
@@ -39,7 +39,6 @@
 );
 
 // Register eID script that performs final FE user authentication. It will be called by the OpenID provider
-$GLOBALS['TYPO3_CONF_VARS']['FE']['eID_include']['tx_openid'] = \FoT3\Openid\OpenidEid::class . '::processRequest';
 $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['setup']['accessLevelCheck'][\FoT3\Openid\OpenidModuleSetup::class] = '';
 
 // Use popup window to refresh login instead of the AJAX relogin:

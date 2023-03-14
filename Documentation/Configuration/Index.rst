@@ -6,17 +6,9 @@
 Configuration
 -------------
 
-Frontend and Backend users can login using OpenID only and only if
-they have OpenID configured in their records. Frontend users have
-OpenID field as a secondary option (palette) to the regular user
-identifier:
-
-.. figure:: ../Images/FrontendUserConfiguration.png
-   :alt: Frontend User configuration
-
-   Setting the OpenID identifier for a frontend user
-
-Backend users have their OpenID below the regular user identifier:
+Backend users can login using OpenID only and only if
+they have OpenID configured in their records. Backend users
+have their OpenID below the regular user identifier:
 
 .. figure:: ../Images/BackendUserConfiguration.png
    :alt: Backend User configuration

@@ -28,7 +28,7 @@ OpenID Authentication
 
 ----
 
-This extension provides OpenID authentication for the TYPO3 frontend and
+This extension provides OpenID authentication for the TYPO3
 backend, which facilitates SSO across multiple websites.
 
 ----

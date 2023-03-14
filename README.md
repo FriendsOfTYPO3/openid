@@ -7,8 +7,11 @@
 
 # TYPO3 extension `openid`
 
-This extension provides OpenID authentication for the TYPO3 frontend and
+This extension provides OpenID authentication for the TYPO3
 backend, which facilitates SSO across multiple websites.
+
+Note: starting from TYPO3 v12 there is no OpenID support in frontend due to the
+complexity of the implementation and lack of time to support it.
 
 |                  | URL                                                        |
 |------------------|------------------------------------------------------------|

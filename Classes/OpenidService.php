@@ -461,19 +461,11 @@ class OpenidService extends AuthenticationService implements LoggerAwareInterfac
      */
     protected function getReturnURL(string $claimedIdentifier, bool $storeRequestToken = false): string
     {
-        if ($this->authenticationInformation['loginType'] === 'FE') {
-            // We will use eID to send user back, create session data and
-            // return to the calling page.
-            // Notice: 'pid' and 'logintype' parameter names cannot be changed!
-            // They are essential for FE user authentication.
-            $returnURL = 'index.php?eID=tx_openid&' . 'pid=' . $this->authenticationInformation['db_user']['checkPidList'] . '&logintype=login';
-        } else {
-            // In the Backend we will use dedicated script to create session.
-            // It is much easier for the Backend to manage users.
-            // Notice: 'login_status' parameter name cannot be changed!
-            // It is essential for BE user authentication.
-            $returnURL = GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . TYPO3_mainDir . 'index.php?login_status=login';
-        }
+        $returnURL = GeneralUtility::getIndpEnv('TYPO3_SITE_URL') .
+            TYPO3_mainDir .
+            'index.php?login_status=login'
+        ;
+
         if (($_GET['tx_openid_mode'] ?? '') === 'finish') {
             $requestURL = $_GET['tx_openid_location'];
         } else {
