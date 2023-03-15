@@ -18,14 +18,14 @@ namespace FoT3\Openid;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
-use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Http\HtmlResponse;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageRendererResolver;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
+use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Fluid\View\StandaloneView;
-use TYPO3\CMS\Lang\LanguageService;
+use TYPO3\CMS\Core\Localization\LanguageService;
 
 /**
  * OpenID selection wizard for the backend
@@ -65,10 +65,8 @@ class Wizard extends OpenidService
     {
         $post = $request->getParsedBody();
         $get = $request->getQueryParams();
-        $p = $get['P'];
-        if (isset($p['itemName'])) {
-            $this->parentFormItemName = $p['itemName'];
-        }
+        $p = $get['P'] ?? [];
+        $this->parentFormItemName = $p['itemName'] ?? '';
         if (isset($p['fieldChangeFunc']['TBE_EDITOR_fieldChanged'])) {
             $this->parentFormFieldChangeFunc = $p['fieldChangeFunc']['TBE_EDITOR_fieldChanged'];
         }
@@ -91,7 +89,7 @@ class Wizard extends OpenidService
                     htmlspecialchars($openIDIdentifier)
                 ),
                 $this->getLanguageService()->sL('LLL:EXT:openid/Resources/Private/Language/locallang.xlf:title.error'),
-                FlashMessage::ERROR
+                ContextualFeedbackSeverity::ERROR
             );
             $flashMessageService->getMessageQueueByIdentifier()->enqueue($flashMessage);
         }
@@ -133,7 +131,7 @@ class Wizard extends OpenidService
                 FlashMessage::class,
                 $lang->sL('LLL:EXT:openid/Resources/Private/Language/locallang.xlf:error.no-response'),
                 $lang->sL('LLL:EXT:openid/Resources/Private/Language/locallang.xlf:title.error'),
-                FlashMessage::ERROR
+                ContextualFeedbackSeverity::ERROR
             );
         } elseif ($this->openIDResponse->status == Auth_OpenID_SUCCESS) {
             // all fine
@@ -145,14 +143,14 @@ class Wizard extends OpenidService
                     $this->claimedId
                 ),
                 $lang->sL('LLL:EXT:openid/Resources/Private/Language/locallang.xlf:title.success'),
-                FlashMessage::OK
+                ContextualFeedbackSeverity::OK
             );
         } elseif ($this->openIDResponse->status == Auth_OpenID_CANCEL) {
             $flashMessage = GeneralUtility::makeInstance(
                 FlashMessage::class,
                 $lang->sL('LLL:EXT:openid/Resources/Private/Language/locallang.xlf:error.cancelled'),
                 $lang->sL('LLL:EXT:openid/Resources/Private/Language/locallang.xlf:title.error'),
-                FlashMessage::ERROR
+                ContextualFeedbackSeverity::ERROR
             );
         } else {
             // another failure. show error message and form again
@@ -164,7 +162,7 @@ class Wizard extends OpenidService
                     ''
                 ),
                 $lang->sL('LLL:EXT:openid/Resources/Private/Language/locallang.xlf:title.error'),
-                FlashMessage::ERROR
+                ContextualFeedbackSeverity::ERROR
             );
         }
 
@@ -180,6 +178,7 @@ class Wizard extends OpenidService
     {
         // use FLUID standalone view for wizard content
         $view = GeneralUtility::makeInstance(StandaloneView::class);
+        $view->setLayoutRootPaths(['EXT:backend/Resources/Private/Layouts']);
         $view->setTemplateRootPaths(['EXT:openid/Resources/Private/Templates/']);
         $view->setTemplate('Wizard/Content.html');
 
@@ -201,6 +200,7 @@ class Wizard extends OpenidService
         $view->assign('parentFormItemNameNoHr', strtr($this->parentFormItemName, ['_hr' => '']));
         $view->assign('parentFormFieldChangeFunc', $this->parentFormFieldChangeFunc);
         $view->assign('showForm', true);
+        $view->assign('flashMessageQueueIdentifier', 'default');
         if (isset($_REQUEST['openid_url'])) {
             $view->assign('openid_url', $_REQUEST['openid_url']);
         }

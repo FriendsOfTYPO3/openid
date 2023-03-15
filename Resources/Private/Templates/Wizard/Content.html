@@ -1,12 +1,11 @@
 <html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
-<f:be.container pageTitle="{f:translate(key:'html.title')}"
-	includeCssFiles="{
-		0:'{f:uri.resource(extensionName:\'openid\', path:\'Css/Wizard.css\')}'
-	}"
->
-	<h1><f:translate key="html.title" /></h1>
 
-	<p><f:translate key="html.description" /></p>
+<f:layout name="Module" />
+
+<f:section name="Content">
+	<h1><f:translate extensionName="openid" key="html.title" /></h1>
+
+	<p><f:translate extensionName="openid" key="html.description" /></p>
 
 	{messages -> f:format.raw()}
 
@@ -37,15 +36,16 @@
 			<input type="hidden" name="P[fieldChangeFunc][TBE_EDITOR_fieldChanged]" value="{parentFormFieldChangeFunc}"/>
 
 			<div class="form-group">
-				<label for="openid_url"><f:translate key="html.openid_url" /></label>
+				<label for="openid_url"><f:translate extensionName="openid" key="html.openid_url" /></label>
 				<input type="text" name="openid_url" class="form-control" id="openid_url" value="{openid_url}"/>
 
 			</div>
-			<button type="submit" class="btn btn-default" name="search" title="{f:translate(key:'html.search')}">
-				<i class="fa fa-openid"></i> {f:translate(key:'html.submit')}
+			<button type="submit" class="btn btn-default" name="search" title="{f:translate(extensionName: 'openid', key:'html.search')}">
+				<i class="fa fa-openid"></i> {f:translate(extensionName: 'openid', key:'html.submit')}
 			</button>
 		</form>
 		</div>
 	</f:if>
-</f:be.container>
+</f:section>
+
 </html>
