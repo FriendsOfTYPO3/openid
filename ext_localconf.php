@@ -47,6 +47,14 @@ $GLOBALS['TYPO3_CONF_VARS']['BE']['showRefreshLoginPopup'] = 1;
 $GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['backend']['loginProviders'][1433416748] = [
     'provider' => \FoT3\Openid\LoginProvider\OpenIdLoginProvider::class,
     'sorting' => 25,
-    'iconIdentifier' => 'fa-openid',
+    'iconIdentifier' => 'ext-openid',
     'label' => 'LLL:EXT:openid/Resources/Private/Language/locallang.xlf:login.link'
 ];
+
+\TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Imaging\IconRegistry::class)->registerIcon(
+    'ext-openid',
+    \TYPO3\CMS\Core\Imaging\IconProvider\SvgIconProvider::class,
+    [
+        'source' => 'EXT:openid/Resources/Public/Icons/login-icon.svg',
+    ]
+);

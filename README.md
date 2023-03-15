@@ -18,3 +18,7 @@ complexity of the implementation and lack of time to support it.
 | **Repository:**  | https://github.com/FriendsOfTYPO3/openid                   |
 | **Read online:** | https://docs.typo3.org/p/friendsoftypo3/openid/main/en-us/ |
 | **TER:**         | https://extensions.typo3.org/extension/openid              |
+
+# OpenID icon
+
+OpenID icon source: https://openid.net/add-openid/logos/
