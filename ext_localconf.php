@@ -1,24 +1,5 @@
 <?php
 
-// Register OpenID processing service with TYPO3
-\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addService(
-    'openid',
-    'auth',
-    'tx_openid_service_process',
-    [
-        'title' => 'OpenID Authentication',
-        'description' => 'OpenID processing login information service for Backend',
-        'subtype' => 'processLoginDataBE,processLoginDataFE',
-        'available' => true,
-        'priority' => 35,
-        // Must be lower than for \TYPO3\CMS\Sv\AuthenticationService (50) to let other processing take place before
-        'quality' => 50,
-        'os' => '',
-        'exec' => '',
-        'className' => \FoT3\Openid\OpenidService::class
-    ]
-);
-
 // Register OpenID authentication service with TYPO3
 \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addService(
     'openid',
