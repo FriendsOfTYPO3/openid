@@ -10,17 +10,17 @@ $tempColumns = [
             'size' => '30',
             // Requirement: unique (BE users are unique in the whole system)
             'eval' => 'trim,nospace,unique',
-            'wizards' => [
-                '0' => [
-                    'type' => 'popup',
-                    'title' => 'Add OpenID',
-                    'module' => [
-                        'name' => 'wizard_openid'
-                    ],
-                    'icon' => 'EXT:openid/Resources/Public/Icons/ext_icon_small.png',
-                    'JSopenParams' => ',width=800,height=600,status=0,menubar=0,scrollbars=0',
-                ]
-            ],
+//            'wizards' => [
+//                '0' => [
+//                    'type' => 'popup',
+//                    'title' => 'Add OpenID',
+//                    'module' => [
+//                        'name' => 'wizard_openid'
+//                    ],
+//                    'icon' => 'EXT:openid/Resources/Public/Icons/login-icon.svg',
+//                    'JSopenParams' => ',width=800,height=600,status=0,menubar=0,scrollbars=0',
+//                ]
+//            ],
         ]
     ]
 ];

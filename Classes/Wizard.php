@@ -17,7 +17,9 @@ namespace FoT3\Openid;
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
+use TYPO3\CMS\Core\Http\HtmlResponse;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageRendererResolver;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
@@ -59,7 +61,7 @@ class Wizard extends OpenidService
      * @param ResponseInterface $response
      * @return ResponseInterface the response with the content
      */
-    public function mainAction(ServerRequestInterface $request, ResponseInterface $response)
+    public function mainAction(ServerRequestInterface $request): ResponseInterface
     {
         $post = $request->getParsedBody();
         $get = $request->getQueryParams();
@@ -71,12 +73,12 @@ class Wizard extends OpenidService
             $this->parentFormFieldChangeFunc = $p['fieldChangeFunc']['TBE_EDITOR_fieldChanged'];
         }
 
-        if ($get['tx_openid_mode'] === 'finish' && $this->openIDResponse === null) {
+        if (($get['tx_openid_mode'] ?? '') === 'finish' && $this->openIDResponse === null) {
             $this->includePHPOpenIDLibrary();
             $openIdConsumer = $this->getOpenIDConsumer();
             $this->openIDResponse = $openIdConsumer->complete($this->getReturnUrl(''));
             $this->handleResponse();
-        } elseif (!empty($post['openid_url'])) {
+        } elseif (!empty(($post['openid_url'] ?? ''))) {
             $openIDIdentifier = $post['openid_url'];
             $this->sendOpenIDRequest($openIDIdentifier);
 
@@ -94,7 +96,8 @@ class Wizard extends OpenidService
             $flashMessageService->getMessageQueueByIdentifier()->enqueue($flashMessage);
         }
 
-        $response->getBody()->write($this->renderContent());
+        $response = GeneralUtility::makeInstance(HtmlResponse::class, $this->renderContent());
+
         return $response;
     }
 
@@ -104,14 +107,15 @@ class Wizard extends OpenidService
      * @param string $claimedIdentifier The OpenID identifier for discovery and auth request
      * @return string Full URL with protocol and hostname
      */
-    protected function getReturnUrl($claimedIdentifier)
+    protected function getReturnUrl(string $claimedIdentifier, bool $storeRequestToken = false): string
     {
         $parameters = [
             'tx_openid_mode' => 'finish',
             'P[itemName]' => $this->parentFormItemName,
             'P[fieldChangeFunc][TBE_EDITOR_fieldChanged]' => $this->parentFormFieldChangeFunc
         ];
-        return GeneralUtility::getIndpEnv('TYPO3_REQUEST_HOST') . BackendUtility::getModuleUrl('wizard_openid', $parameters);
+        $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
+        return $uriBuilder->buildUriFromRoute('wizard_openid', $parameters);
     }
 
     /**
@@ -176,7 +180,6 @@ class Wizard extends OpenidService
     {
         // use FLUID standalone view for wizard content
         $view = GeneralUtility::makeInstance(StandaloneView::class);
-        $view->getRequest()->setControllerExtensionName('openid');
         $view->setTemplateRootPaths(['EXT:openid/Resources/Private/Templates/']);
         $view->setTemplate('Wizard/Content.html');
 
@@ -188,8 +191,11 @@ class Wizard extends OpenidService
                                                ->resolve()
                                                ->render($flashMessages);
 
+        $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
+        $uri = $uriBuilder->buildUriFromRoute('wizard_openid');
+
         $view->assign('messages', $renderedFlashMessages);
-        $view->assign('formAction', BackendUtility::getModuleUrl('wizard_openid'));
+        $view->assign('formAction', $uri);
         $view->assign('claimedId', $this->claimedId);
         $view->assign('parentFormItemName', $this->parentFormItemName);
         $view->assign('parentFormItemNameNoHr', strtr($this->parentFormItemName, ['_hr' => '']));
