@@ -48,6 +48,8 @@ class Auth_OpenID_DiffieHellman {
     /** @var Auth_OpenID_BcMathWrapper */
     public $lib = null;
 
+    public $public;
+
     function __construct($mod = null, $gen = null,
                                        $private = null, $lib = null)
     {

@@ -303,8 +303,19 @@ class Auth_Yadis_Manager {
     /** @var string */
     public $session_key;
 
-    /** @var Auth_OpenID_ServiceEndpoint */
-    public $_current;
+    /**
+     * Reference to the current service object
+     *
+     * @var ?Auth_OpenID_ServiceEndpoint
+     */
+    public $_current = null;
+
+    /**
+     * Stale flag for cleanup if PHP lib has trouble.
+     *
+     * @var bool
+     */
+    public $stale = false;
 
     /**
      * Intialize a new yadis service manager.
@@ -328,12 +339,6 @@ class Auth_Yadis_Manager {
         $this->services = $services;
 
         $this->session_key = $session_key;
-
-        // Reference to the current service object
-        $this->_current = null;
-
-        // Stale flag for cleanup if PHP lib has trouble.
-        $this->stale = false;
     }
 
     /**
@@ -414,6 +419,18 @@ class Auth_Yadis_Discovery {
      * @access private
      */
     public $PREFIX = '_yadis_services_';
+
+    /** @var \Auth_Yadis_PHPSession */
+    public $session;
+
+    /** @var string */
+    public $url;
+
+    /** @var string */
+    public $session_key_suffix;
+
+    /** @var string */
+    public $session_key;
 
     /**
      * Initialize a discovery object.

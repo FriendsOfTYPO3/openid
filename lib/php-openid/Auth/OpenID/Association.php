@@ -69,6 +69,16 @@ class Auth_OpenID_Association {
         'HMAC-SHA256' => 'Auth_OpenID_HMACSHA256',
     ];
 
+    public $handle;
+
+    public $secret;
+
+    public $issued;
+
+    public $lifetime;
+
+    public $assoc_type;
+
     /**
      * This is an alternate constructor (factory method) used by the
      * OpenID consumer library to create associations.  OpenID store
@@ -539,9 +549,10 @@ function Auth_OpenID_getEncryptedNegotiator()
  * @package OpenID
  */
 class Auth_OpenID_SessionNegotiator {
+    public array $allowed_types = [];
+
     function __construct($allowed_types)
     {
-        $this->allowed_types = [];
         $this->setAllowedTypes($allowed_types);
     }
 

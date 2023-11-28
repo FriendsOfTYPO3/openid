@@ -65,15 +65,33 @@ function Auth_OpenID_getOpenIDTypeName($type_uri) {
  * Object representing an OpenID service endpoint.
  */
 class Auth_OpenID_ServiceEndpoint {
+    /** @var ?string */
+    public $claimed_id = null;
+
+    /** @var ?string */
+    public $server_url = null;
+
+    /** @var array */
+    public $type_uris = [];
+
+    /** @var ?string */
+    public $local_id = null;
+
+    /** @var ?string */
+    public $canonicalID = null;
+
+    /**
+     * whether this came from an XRDS
+     *
+     * @var bool
+     */
+    public $used_yadis = false;
+
+    /** @var ?string */
+    public $display_identifier = null;
+
     function __construct()
     {
-        $this->claimed_id = null;
-        $this->server_url = null;
-        $this->type_uris = [];
-        $this->local_id = null;
-        $this->canonicalID = null;
-        $this->used_yadis = false; // whether this came from an XRDS
-        $this->display_identifier = null;
     }
 
     function getDisplayIdentifier()
