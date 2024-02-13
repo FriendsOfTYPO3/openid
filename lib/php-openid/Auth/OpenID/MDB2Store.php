@@ -44,6 +44,10 @@ require_once 'Auth/OpenID/Nonce.php';
  * @package OpenID
  */
 class Auth_OpenID_MDB2Store extends Auth_OpenID_OpenIDStore {
+    public $associations_table_name;
+    public $nonces_table_name;
+    public $connection;
+    public $max_nonce_age;
     /**
      * This creates a new MDB2Store instance.  It requires an
      * established database connection be given to it, and it allows

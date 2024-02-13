@@ -12,6 +12,8 @@ class Auth_Yadis_ProxyResolver {
     /** @var Auth_Yadis_HTTPFetcher */
     protected $fetcher;
 
+    public $proxy_url;
+
     function __construct($fetcher, $proxy_url = null)
     {
         $this->fetcher = $fetcher;

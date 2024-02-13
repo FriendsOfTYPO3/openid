@@ -42,6 +42,9 @@ class Auth_Yadis_ParseHTML {
      */
     public $_attr_find = '\b([-\w]+)=(".*?"|\'.*?\'|.+?)[\/\s>]';
 
+    public $_entity_replacements;
+    public $_ent_replace;
+
     function __construct()
     {
         $this->_attr_find = sprintf("/%s/%s",

@@ -107,6 +107,9 @@ class Auth_OpenID_Parse {
 
     public $_open_tag_expr = "<%s\b";
     public $_close_tag_expr = "<((\/%s\b)|(%s[^>\/]*\/))>";
+    public $_link_find;
+    public $_entity_replacements;
+    public $_ent_replace;
 
     function __construct()
     {

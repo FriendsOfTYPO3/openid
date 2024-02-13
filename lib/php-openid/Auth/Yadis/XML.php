@@ -139,6 +139,10 @@ class Auth_Yadis_XMLParser {
  * @package OpenID
  */
 class Auth_Yadis_domxml extends Auth_Yadis_XMLParser {
+    public $xml;
+    public $doc;
+    public $xpath;
+    public $errors;
     function __construct()
     {
         $this->xml = null;
