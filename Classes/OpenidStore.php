@@ -16,6 +16,7 @@ namespace FoT3\Openid;
  */
 
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Doctrine\DBAL\ParameterType;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
@@ -56,7 +57,7 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
             ->where(
                 $queryBuilder->expr()->eq('server_url', $queryBuilder->createNamedParameter($serverUrl)),
                 $queryBuilder->expr()->eq('assoc_handle', $queryBuilder->createNamedParameter($association->handle)),
-                $queryBuilder->expr()->eq('expires', $queryBuilder->createNamedParameter(time(), \PDO::PARAM_INT))
+                $queryBuilder->expr()->eq('expires', $queryBuilder->createNamedParameter(time(), ParameterType::INTEGER))
             )
             ->executeQuery()
             ->fetchOne();
@@ -69,7 +70,7 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
                 ->where(
                     $queryBuilder->expr()->eq('server_url', $queryBuilder->createNamedParameter($serverUrl)),
                     $queryBuilder->expr()->eq('assoc_handle', $queryBuilder->createNamedParameter($association->handle)),
-                    $queryBuilder->expr()->eq('expires', $queryBuilder->createNamedParameter(time(), \PDO::PARAM_INT))
+                    $queryBuilder->expr()->eq('expires', $queryBuilder->createNamedParameter(time(), ParameterType::INTEGER))
                 )
                 ->executeStatement();
         } else {
@@ -118,7 +119,7 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
         $queryBuilder->getRestrictions()->removeAll();
         $queryBuilder->select('uid', 'content')->from(self::ASSOCIATION_TABLE_NAME)->where(
             $queryBuilder->expr()->eq('server_url', $queryBuilder->createNamedParameter($serverUrl)),
-            $queryBuilder->expr()->gt('expires', $queryBuilder->createNamedParameter(time(), \PDO::PARAM_INT))
+            $queryBuilder->expr()->gt('expires', $queryBuilder->createNamedParameter(time(), ParameterType::INTEGER))
         );
         if ($handle !== null) {
             $queryBuilder->andWhere($queryBuilder->expr()->eq('assoc_handle', $queryBuilder->createNamedParameter($handle)));
@@ -135,7 +136,7 @@ class OpenidStore extends \Auth_OpenID_OpenIDStore
                 $queryBuilder
                     ->update(self::ASSOCIATION_TABLE_NAME)
                     ->set('tstamp', time())
-                    ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($row['uid'], \PDO::PARAM_INT)))
+                    ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($row['uid'], ParameterType::INTEGER)))
                     ->executeStatement();
             }
         }

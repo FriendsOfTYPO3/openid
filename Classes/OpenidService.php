@@ -213,7 +213,7 @@ class OpenidService extends AuthenticationService implements LoggerAwareInterfac
                         $this->logger->debug(
                             sprintf(
                                 'User \'%s\' logged in with OpenID \'%s\'',
-                                $userRecord[$this->parentObject->formfield_uname],
+                                $userRecord[$this->parentObject->username_column],
                                 $openIDIdentifier
                             )
                         );
@@ -462,8 +462,8 @@ class OpenidService extends AuthenticationService implements LoggerAwareInterfac
     protected function getReturnURL(string $claimedIdentifier, bool $storeRequestToken = false): string
     {
         $returnURL = GeneralUtility::getIndpEnv('TYPO3_SITE_URL') .
-            TYPO3_mainDir .
-            'index.php?login_status=login'
+            trim($GLOBALS['TYPO3_CONF_VARS']['BE']['entryPoint'], '/') .
+            '/index.php?login_status=login'
         ;
 
         if (($_GET['tx_openid_mode'] ?? '') === 'finish') {

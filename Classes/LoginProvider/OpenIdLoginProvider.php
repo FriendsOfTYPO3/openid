@@ -34,6 +34,9 @@ class OpenIdLoginProvider implements LoginProviderInterface
     public function render(StandaloneView $view, PageRenderer $pageRenderer, LoginController $loginController)
     {
         $view->setTemplatePathAndFilename(GeneralUtility::getFileAbsFileName('EXT:openid/Resources/Private/Templates/OpenidLogin.html'));
-        $view->assign('presetOpenId', GeneralUtility::_GP('openid_url'));
+        $request = $GLOBALS['TYPO3_REQUEST'];
+        /** @var \Psr\Http\Message\ServerRequestInterface $request */
+        $queryParams = $request->getQueryParams();
+        $view->assign('presetOpenId', $queryParams['openid_url'] ?? '');
     }
 }

@@ -55,7 +55,8 @@ class RestoreRequestToken
      */
     public function __invoke(BeforeRequestTokenProcessedEvent $event): void
     {
-        $tokenId = GeneralUtility::_GET('tx_openid_token');
+        $queryParams = $event->getRequest()->getQueryParams();
+        $tokenId = $queryParams['tx_openid_token'] ?? '';
         if ($tokenId) {
             $connection = GeneralUtility::makeInstance(ConnectionPool::class)->getConnectionForTable('tx_openid_token');
 
