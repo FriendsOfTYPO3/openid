@@ -27,4 +27,3 @@ $tempColumns = [
 // Add new columns to be_users table
 \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addTCAcolumns('be_users', $tempColumns);
 \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addToAllTCAtypes('be_users', 'tx_openid_openid', '', 'after:username');
-\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addLLrefForTCAdescr('be_users', 'EXT:openid/Resources/Private/Language/locallang_csh.xlf');
