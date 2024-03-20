@@ -30,6 +30,9 @@
 		}
 	},
 	"extra": {
+		"branch-alias": {
+			"dev-release/13": "13.0.x-dev"
+		},
 		"typo3/cms": {
 			"extension-key": "openid"
 		}
