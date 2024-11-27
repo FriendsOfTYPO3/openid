@@ -20,6 +20,11 @@ defined('TYPO3_MODE') || die();
     ]
 );
 
+if (version_compare(PHP_VERSION, '8.2.26', '>=') && version_compare(PHP_VERSION, '8.3.0', '<') || version_compare(PHP_VERSION, '8.3.14', '>=') && version_compare(PHP_VERSION, '8.4.0', '<')) {
+    // See https://github.com/php/php-src/issues/16870
+    define('Auth_OpenID_BUGGY_GMP', 1);
+}
+
 // Register OpenID authentication service with TYPO3
 \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addService(
     'openid',
