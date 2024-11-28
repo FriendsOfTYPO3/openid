@@ -72,6 +72,7 @@ function Auth_OpenID_AX_checkAlias($alias)
  * @package OpenID
  */
 class Auth_OpenID_AX_Error {
+    public $message;
     function __construct($message=null)
     {
         $this->message = $message;
@@ -142,6 +143,10 @@ class Auth_OpenID_AX_Message extends Auth_OpenID_Extension {
  * @package OpenID
  */
 class Auth_OpenID_AX_AttrInfo {
+    public $required;
+    public $count;
+    public $type_uri;
+    public $alias;
     /**
      * Construct an attribute information object.  Do not call this
      * directly; call make(...) instead.

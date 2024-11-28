@@ -1308,6 +1308,8 @@ class Auth_OpenID_ServerResponse {
     /** @var Auth_OpenID_Request */
     public $request;
 
+    public $fields;
+
     /**
      * Auth_OpenID_ServerResponse constructor.
      *
@@ -1402,6 +1404,7 @@ class Auth_OpenID_ServerResponse {
 class Auth_OpenID_WebResponse {
     public $code = AUTH_OPENID_HTTP_OK;
     public $body = "";
+    public $headers;
 
     function __construct($code = null, $headers = null,
                                      $body = null)
@@ -1791,6 +1794,7 @@ class Auth_OpenID_Decoder {
  * @package OpenID
  */
 class Auth_OpenID_EncodingError {
+    public $response;
     function __construct($response = null)
     {
         if ($response !== null) {
