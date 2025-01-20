@@ -13,7 +13,6 @@
 		}
 	],
 	"require": {
-		"ext-gmp": "*",
 		"ext-curl": "*",
 		"ext-dom": "*",
 		"typo3/cms-core": ">=9.5.0,<12.0.0",
@@ -22,6 +21,10 @@
 	"replace": {
 		"typo3/cms-openid": "self.version",
 		"typo3-ter/openid": "self.version"
+	},
+	"suggest": {
+		"ext-gmp": "Either GMP or bcmath has to be installed",
+		"ext-bcmath": "Either GMP or bcmath has to be installed"
 	},
 	"autoload": {
 		"psr-4": {
