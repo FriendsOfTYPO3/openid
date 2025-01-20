@@ -12,6 +12,11 @@
 			"role": "Maintainer"
 		}
 	],
+	"extra": {
+		"typo3/cms": {
+			"extension-key": "openid"
+		}
+	},
 	"require": {
 		"ext-curl": "*",
 		"ext-dom": "*",
