@@ -18,11 +18,14 @@
 		}
 	],
 	"require": {
-		"ext-gmp": "*",
 		"ext-curl": "*",
 		"ext-dom": "*",
 		"typo3/cms-core": "^12.2",
 		"typo3/cms-setup": "*"
+	},
+	"suggest": {
+		"ext-gmp": "Either ext-gmp or ext-bcmath are needed",
+		"ext-bcmath": "Either ext-gmp or ext-bcmath are needed"
 	},
 	"autoload": {
 		"psr-4": {
