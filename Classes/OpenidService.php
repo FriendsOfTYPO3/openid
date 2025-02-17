@@ -164,10 +164,9 @@ class OpenidService extends AuthenticationService implements LoggerAwareInterfac
             } catch (\Exception $exception) {
                 $this->logger->error(
                     sprintf(
-                        '[%d] "%s" %s',
+                        '[%d] "%s"',
                         $exception->getCode(),
-                        $exception->getMessage(),
-                        $exception->getTraceAsString()
+                        $exception->getMessage()
                     )
                 );
             }
@@ -508,7 +507,7 @@ class OpenidService extends AuthenticationService implements LoggerAwareInterfac
     protected function normalizeOpenID(string $openIDIdentifier): string
     {
         if (empty($openIDIdentifier)) {
-            throw new Exception('Empty OpenID Identifier given.', 1381922460);
+            throw new \Exception('Empty OpenID Identifier given.', 1381922460);
         }
         // Strip everything with and behind the fragment delimiter character "#"
         if (str_contains($openIDIdentifier, '#')) {
@@ -542,7 +541,13 @@ class OpenidService extends AuthenticationService implements LoggerAwareInterfac
                 // This only happens when the OpenID provider will select the final OpenID identity
                 // In this case we require a valid URL as we cannot guess the scheme
                 // So we throw an Exception and do not start the OpenID handshake at all
-                throw new Exception('Trying to authenticate with OpenID but identifier is neither found in a user record nor it is a valid URL.', 1381922465);
+                throw new \Exception(
+                    sprintf(
+                        'Trying to authenticate with OpenID but identifier "%s" is neither found in a user record nor it is a valid URL.',
+                        $openIDIdentifier
+                    ),
+                    1381922465
+                );
             }
         }
         // An empty path component is normalized to a slash
