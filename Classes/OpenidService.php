@@ -18,8 +18,8 @@ namespace FoT3\Openid;
 use Doctrine\DBAL\ArrayParameterType;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
+use TYPO3\CMS\Core\Authentication\AbstractAuthenticationService;
 use TYPO3\CMS\Core\Authentication\AbstractUserAuthentication;
-use TYPO3\CMS\Core\Authentication\AuthenticationService;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Context\SecurityAspect;
 use TYPO3\CMS\Core\Core\Environment;
@@ -36,24 +36,9 @@ require_once ExtensionManagementUtility::extPath('openid') . 'lib/php-openid/Aut
 /**
  * Service "OpenID Authentication" for the "openid" extension.
  */
-class OpenidService extends AuthenticationService implements LoggerAwareInterface, SingletonInterface
+class OpenidService extends AbstractAuthenticationService implements LoggerAwareInterface, SingletonInterface
 {
     use LoggerAwareTrait;
-
-    /**
-     * Login data as passed to initAuth()
-     *
-     * @var array
-     */
-    protected array $loginData = [];
-
-    /**
-     * Additional authentication information provided by AbstractUserAuthentication.
-     * We use it to decide what database table contains user records.
-     *
-     * @var array
-     */
-    protected array $authenticationInformation = [];
 
     /**
      * OpenID response object. It is initialized when OpenID provider returns
@@ -115,14 +100,12 @@ class OpenidService extends AuthenticationService implements LoggerAwareInterfac
      *
      * @param string $mode: Subtype for authentication (either "getUserFE" or "getUserBE")
      * @param array $loginData: Login data submitted by user and preprocessed by AbstractUserAuthentication
-     * @param array $authenticationInformation: Additional TYPO3 information for authentication services (unused here)
+     * @param array $authInfo: Additional TYPO3 information for authentication services (unused here)
      * @param AbstractUserAuthentication $parentObject Calling object
      */
-    public function initAuth($mode, $loginData, $authenticationInformation, $parentObject): void
+    public function initAuth($mode, $loginData, $authInfo, $parentObject): void
     {
-        $this->authenticationInformation = $authenticationInformation;
-        $this->loginData = $loginData;
-        $this->parentObject = $parentObject;
+        parent::initAuth($mode, $loginData, $authInfo, $parentObject);
 
         // If we are here after authentication by the OpenID server, get its response.
         if (($_GET['tx_openid_mode'] ?? '') === 'finish' && $this->openIDResponse === null) {
@@ -208,11 +191,11 @@ class OpenidService extends AuthenticationService implements LoggerAwareInterfac
                         // user actually tried to authenticate using his OpenID. In this case
                         // we must change the password in the record to a long random string so
                         // that this user cannot be authenticated with other service.
-                        $userRecord[$this->authenticationInformation['db_user']['userident_column']] = GeneralUtility::makeInstance(Random::class)->generateRandomHexString(42);
+                        $userRecord[$this->authInfo['db_user']['userident_column']] = GeneralUtility::makeInstance(Random::class)->generateRandomHexString(42);
                         $this->logger->debug(
                             sprintf(
                                 'User \'%s\' logged in with OpenID \'%s\'',
-                                $userRecord[$this->parentObject->formfield_uname],
+                                $userRecord[$this->pObj->formfield_uname],
                                 $openIDIdentifier
                             )
                         );
@@ -221,8 +204,8 @@ class OpenidService extends AuthenticationService implements LoggerAwareInterfac
                     }
                 }
             }
-        } elseif (!empty($this->loginData['uident_openid'])) {
-            $this->sendOpenIDRequest($this->loginData['uident_openid']);
+        } elseif (!empty($this->login['uident_openid'])) {
+            $this->sendOpenIDRequest($this->login['uident_openid']);
         }
         return $userRecord;
     }
@@ -310,11 +293,11 @@ class OpenidService extends AuthenticationService implements LoggerAwareInterfac
             // $openIDIdentifier always has a trailing slash
             // but tx_openid_openid field possibly not so check for both alternatives in database
             /** @var QueryBuilder $queryBuilder */
-            $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable($this->authenticationInformation['db_user']['table']);
+            $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable($this->authInfo['db_user']['table']);
             $queryBuilder->getRestrictions()->removeAll();
             $record = $queryBuilder
                 ->select('*')
-                ->from($this->authenticationInformation['db_user']['table'])
+                ->from($this->authInfo['db_user']['table'])
                 ->where(
                     $queryBuilder->expr()->in(
                         'tx_openid_openid',
@@ -323,8 +306,8 @@ class OpenidService extends AuthenticationService implements LoggerAwareInterfac
                             ArrayParameterType::STRING
                         )
                     ),
-                    $this->authenticationInformation['db_user']['check_pid_clause'] ?? '',
-                    $this->authenticationInformation['db_user']['enable_clause']
+                    $this->authInfo['db_user']['check_pid_clause'] ?? '',
+                    $this->authInfo['db_user']['enable_clause']
                 )
                 ->executeQuery()
                 ->fetchAssociative();
@@ -343,6 +326,8 @@ class OpenidService extends AuthenticationService implements LoggerAwareInterfac
                     $exception->getTraceAsString()
                 )
             );
+            // Do not call the hook
+            return null;
         }
 
         // Hook to modify the user record, e.g. to register a new user
@@ -350,7 +335,7 @@ class OpenidService extends AuthenticationService implements LoggerAwareInterfac
             $_params = [
                 'record' => &$record,
                 'response' => $this->openIDResponse,
-                'authInfo' => $this->authenticationInformation
+                'authInfo' => $this->authInfo
             ];
             foreach ($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['openid']['getUserRecord'] as $funcName) {
                 GeneralUtility::callUserFunction($funcName, $_params, $this);
@@ -406,7 +391,7 @@ class OpenidService extends AuthenticationService implements LoggerAwareInterfac
         if (isset($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['openid']['authRequest']) && is_array($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['openid']['authRequest'])) {
             $_params = [
                 'authRequest' => $authenticationRequest,
-                'authInfo' => $this->authenticationInformation
+                'authInfo' => $this->authInfo
             ];
             foreach ($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['openid']['authRequest'] as $funcName) {
                 GeneralUtility::callUserFunction($funcName, $_params, $this);
@@ -516,11 +501,11 @@ class OpenidService extends AuthenticationService implements LoggerAwareInterfac
         // A URI with a missing scheme is normalized to a http URI
         if (!preg_match('#^https?://#', $openIDIdentifier)) {
             /** @var QueryBuilder $queryBuilder */
-            $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable($this->authenticationInformation['db_user']['table']);
+            $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable($this->authInfo['db_user']['table']);
             $queryBuilder->getRestrictions()->removeAll();
             $row = $queryBuilder
                 ->select('tx_openid_openid')
-                ->from($this->authenticationInformation['db_user']['table'])
+                ->from($this->authInfo['db_user']['table'])
                 ->where(
                     $queryBuilder->expr()->in('tx_openid_openid', $queryBuilder->createNamedParameter(
                         [
