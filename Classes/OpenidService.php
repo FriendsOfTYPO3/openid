@@ -172,7 +172,7 @@ class OpenidService extends AbstractAuthenticationService implements LoggerAware
      */
     public function getUser()
     {
-        if ($this->loginData['status'] !== 'login') {
+        if ($this->login['status'] !== 'login') {
             return null;
         }
         $userRecord = null;
