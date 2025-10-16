@@ -17,7 +17,9 @@ namespace FoT3\Openid\LoginProvider;
 
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\LoginProvider\LoginProviderInterface;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\View\ViewInterface;
+use TYPO3\CMS\Fluid\View\FluidViewAdapter;
 use TYPO3\CMS\Fluid\View\StandaloneView;
 
 /**
@@ -31,6 +33,13 @@ class OpenIdLoginProvider implements LoginProviderInterface
         $queryParams = $request->getQueryParams();
         $view->assign('presetOpenId', $queryParams['openid_url'] ?? '');
 
-        return 'OpenidLogin.html';
+        if ($view instanceof FluidViewAdapter) {
+            $templatePaths = $view->getRenderingContext()->getTemplatePaths();
+            $templateRootPaths = $templatePaths->getTemplateRootPaths();
+            $templateRootPaths[] = 'EXT:openid/Resources/Private/Templates';
+            $templatePaths->setTemplateRootPaths($templateRootPaths);
+        }
+
+        return 'OpenidLogin';
     }
 }

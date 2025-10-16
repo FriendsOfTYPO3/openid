@@ -23,6 +23,7 @@ use TYPO3\CMS\Core\Authentication\AbstractUserAuthentication;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Context\SecurityAspect;
 use TYPO3\CMS\Core\Core\Environment;
+use TYPO3\CMS\Core\Crypto\HashService;
 use TYPO3\CMS\Core\Crypto\Random;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
@@ -119,10 +120,9 @@ class OpenidService extends AbstractAuthenticationService implements LoggerAware
      * Process the submitted OpenID URL if valid.
      *
      * @param array $loginData Credentials that are submitted and potentially modified by other services
-     * @param string $passwordTransmissionStrategy Keyword of how the password has been hashed or encrypted before submission
      * @return int
      */
-    public function processLoginData(array &$loginData, $passwordTransmissionStrategy)
+    public function processLoginData(array &$loginData)
     {
         $isProcessed = 0;
         if ($this->openIDResponse) {
@@ -478,7 +478,7 @@ class OpenidService extends AbstractAuthenticationService implements LoggerAware
      */
     protected function getSignature(string $parameter): string
     {
-        return GeneralUtility::hmac($parameter, 'openid');
+        return HashService::hmac($parameter, 'openid');
     }
 
     /**
