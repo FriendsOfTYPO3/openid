@@ -20,7 +20,7 @@
 	"require": {
 		"ext-curl": "*",
 		"ext-dom": "*",
-		"typo3/cms-core": "^13.0",
+		"typo3/cms-core": "^14",
 		"typo3/cms-setup": "*"
 	},
 	"suggest": {
@@ -34,7 +34,7 @@
 	},
 	"extra": {
 		"branch-alias": {
-			"dev-release/13": "13.0.x-dev"
+			"dev-release/14": "14.0.x-dev"
 		},
 		"typo3/cms": {
 			"extension-key": "openid"
