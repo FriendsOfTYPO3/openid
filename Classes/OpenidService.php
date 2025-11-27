@@ -478,7 +478,7 @@ class OpenidService extends AbstractAuthenticationService implements LoggerAware
      */
     protected function getSignature(string $parameter): string
     {
-        return HashService::hmac($parameter, 'openid');
+        return GeneralUtility::makeInstance(HashService::class)->hmac($parameter, 'openid');
     }
 
     /**
