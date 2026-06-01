@@ -25,5 +25,6 @@ $tempColumns = [
     ]
 ];
 // Add new columns to be_users table
+\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addUserSetting('tx_openid_openid', $tempColumns['tx_openid_openid'], 'after:password2');
 \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addTCAcolumns('be_users', $tempColumns);
 \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addToAllTCAtypes('be_users', 'tx_openid_openid', '', 'after:username');
