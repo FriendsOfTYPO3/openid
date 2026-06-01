@@ -15,10 +15,11 @@ namespace FoT3\Openid\LoginProvider;
  * The TYPO3 project - inspiring people to share!
  */
 
-use TYPO3\CMS\Backend\Controller\LoginController;
+use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\LoginProvider\LoginProviderInterface;
-use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Core\View\ViewInterface;
+use TYPO3\CMS\Fluid\View\FluidViewAdapter;
 use TYPO3\CMS\Fluid\View\StandaloneView;
 
 /**
@@ -26,17 +27,19 @@ use TYPO3\CMS\Fluid\View\StandaloneView;
  */
 class OpenIdLoginProvider implements LoginProviderInterface
 {
-    /**
-     * @param StandaloneView $view
-     * @param PageRenderer $pageRenderer
-     * @param LoginController $loginController
-     */
-    public function render(StandaloneView $view, PageRenderer $pageRenderer, LoginController $loginController)
+    /** @inheritdoc */
+    public function modifyView(ServerRequestInterface $request, ViewInterface $view): string
     {
-        $view->setTemplatePathAndFilename(GeneralUtility::getFileAbsFileName('EXT:openid/Resources/Private/Templates/OpenidLogin.html'));
-        $request = $GLOBALS['TYPO3_REQUEST'];
-        /** @var \Psr\Http\Message\ServerRequestInterface $request */
         $queryParams = $request->getQueryParams();
         $view->assign('presetOpenId', $queryParams['openid_url'] ?? '');
+
+        if ($view instanceof FluidViewAdapter) {
+            $templatePaths = $view->getRenderingContext()->getTemplatePaths();
+            $templateRootPaths = $templatePaths->getTemplateRootPaths();
+            $templateRootPaths[] = 'EXT:openid/Resources/Private/Templates';
+            $templatePaths->setTemplateRootPaths($templateRootPaths);
+        }
+
+        return 'OpenidLogin';
     }
 }
