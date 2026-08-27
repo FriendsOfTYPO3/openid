@@ -130,6 +130,7 @@ class OpenidService extends AbstractAuthenticationService implements LoggerAware
                 $this->openIDResponse->status === Auth_OpenID_SUCCESS
             ) {
                 $isProcessed = is_array($this->getUserRecord($this->getFinalOpenIDIdentifier())) ? 200 : 0;
+                $this->logger->debug(sprintf('$isProcessed=%d at %d', $isProcessed, __LINE__));
             }
         } elseif (empty($loginData['uident_text'])) {
             try {
@@ -137,12 +138,16 @@ class OpenidService extends AbstractAuthenticationService implements LoggerAware
                 if (!empty($openIdUrl)) {
                     $loginData['uident_openid'] = $this->normalizeOpenID($openIdUrl);
                     $isProcessed = is_array($this->getUserRecord($loginData['uident_openid'])) ? 200 : 0;
+                    $this->logger->debug(sprintf('$isProcessed=%d at %d', $isProcessed, __LINE__));
                 } elseif (!empty($loginData['uname'])) {
                     // It might be the case that during frontend login the OpenID URL is submitted in the username field
                     // Since we are a low priority service, and no password has been submitted it is OK to just assume
                     // we might have gotten an OpenID URL
                     $loginData['uident_openid'] = $this->normalizeOpenID($loginData['uname']);
                     $isProcessed = is_array($this->getUserRecord($loginData['uident_openid'])) ? 200 : 0;
+                    $this->logger->debug(sprintf('$isProcessed=%d at %d', $isProcessed, __LINE__));
+                } else {
+                    $this->logger->warning('Neither "openid_url", nor "uname" submitted for login.');
                 }
             } catch (\Exception $exception) {
                 $this->logger->error(
@@ -173,6 +178,7 @@ class OpenidService extends AbstractAuthenticationService implements LoggerAware
     public function getUser()
     {
         if ($this->login['status'] !== 'login') {
+            $this->logger->debug('Login status is not "login"');
             return null;
         }
         $userRecord = null;
@@ -229,12 +235,17 @@ class OpenidService extends AbstractAuthenticationService implements LoggerAware
                 if ($this->openIDResponse->status === Auth_OpenID_SUCCESS) {
                     // Success (code 200)
                     $result = 200;
+                    $this->logger->info(sprintf('OpenID authentication successful for "%s".', $userRecord['tx_openid_openid']));
                 } else {
                     // It was OpenID but it failed, do not continue with outher services
                     $result = -1;
                     $this->logger->warning(sprintf('OpenID authentication failed with code \'%s\'.', $this->openIDResponse->status));
                 }
+            } elseif ($this->openIDResponse !== null) {
+                $this->logger->debug(sprintf('$this->openIDResponse is instanceof %s', $this->openIDResponse::class));
             }
+        } else {
+            $this->logger->debug(sprintf('User "%s" is not an OpenID user.', $userRecord['username']));
         }
         return $result;
     }
@@ -287,9 +298,9 @@ class OpenidService extends AbstractAuthenticationService implements LoggerAware
      */
     protected function getUserRecord(string $openIDIdentifier): ?array
     {
-        $record = null;
         try {
             $openIDIdentifier = $this->normalizeOpenID($openIDIdentifier);
+            $this->logger->debug(sprintf('Normalized OpenID identifier: "%s"', $openIDIdentifier));
             // $openIDIdentifier always has a trailing slash
             // but tx_openid_openid field possibly not so check for both alternatives in database
             /** @var QueryBuilder $queryBuilder */
@@ -314,6 +325,8 @@ class OpenidService extends AbstractAuthenticationService implements LoggerAware
             if ($record) {
                 // Make sure to work only with normalized OpenID during the whole process
                 $record['tx_openid_openid'] = $this->normalizeOpenID($record['tx_openid_openid']);
+            } else {
+                $this->logger->debug(sprintf('User not found for "%s" or "%s"', $openIDIdentifier, rtrim($openIDIdentifier, '/')));
             }
         } catch (\Exception $exception) {
             // This should never happen and generally means hack attempt.
@@ -338,7 +351,9 @@ class OpenidService extends AbstractAuthenticationService implements LoggerAware
                 'authInfo' => $this->authInfo
             ];
             foreach ($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['openid']['getUserRecord'] as $funcName) {
+                $this->logger->debug(sprintf('Calling getUserRecord hook, record is null: %s', empty($record) ? 'yes' : 'no'));
                 GeneralUtility::callUserFunction($funcName, $_params, $this);
+                $this->logger->debug(sprintf('After getUserRecord hook record is null: %s', empty($record) ? 'yes' : 'no'));
             }
         }
 
@@ -418,6 +433,7 @@ class OpenidService extends AbstractAuthenticationService implements LoggerAware
             @ob_end_clean();
             header(HttpUtility::HTTP_STATUS_303);
             header('Location: ' . $redirectURL);
+            $this->logger->debug(sprintf('Redirecting to %s', $redirectURL));
         } else {
             $formHtml = $authenticationRequest->htmlMarkup($trustedRoot, $returnURL/*, false, ['id' => 'openid_message']*/);
             // Display an error if the form markup couldn't be generated;
@@ -427,6 +443,7 @@ class OpenidService extends AbstractAuthenticationService implements LoggerAware
                 $this->logger->warning(sprintf('Could not create form markup for OpenID identifier \'%s\'', $openIDIdentifier));
                 return;
             }
+            $this->logger->debug('Prepared form markup for OpenID');
             @ob_end_clean();
             echo $formHtml;
         }
@@ -557,6 +574,7 @@ class OpenidService extends AbstractAuthenticationService implements LoggerAware
         if (!$result) {
             $result = $this->getSignedClaimedOpenIDIdentifier();
         }
+        $this->logger->debug(sprintf('Final OpenID identifier: \'%s\'', $result));
         return $result;
     }
 
@@ -570,6 +588,7 @@ class OpenidService extends AbstractAuthenticationService implements LoggerAware
         $result = (string)$_GET['tx_openid_claimed'];
         $signature = $this->getSignature($result);
         if ($signature !== $_GET['tx_openid_signature']) {
+            $this->logger->warning(sprintf('Bad signature received for "%s"', $result));
             $result = '';
         }
         return $result;
