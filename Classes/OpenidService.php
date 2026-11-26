@@ -464,7 +464,7 @@ class OpenidService extends AbstractAuthenticationService implements LoggerAware
     {
         $returnURL = GeneralUtility::getIndpEnv('TYPO3_SITE_URL') .
             trim($GLOBALS['TYPO3_CONF_VARS']['BE']['entryPoint'], '/') .
-            '/index.php?login_status=login'
+            '/?login_status=login'
         ;
 
         if (($_GET['tx_openid_mode'] ?? '') === 'finish') {
